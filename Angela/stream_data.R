@@ -1,12 +1,12 @@
 #Load data Github
 
-COVIDsite <- https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports
+COVIDrecoveredGlobal <- "https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv"
+  
+COVIDrecoveredUS <- "https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"
 
-Feb <- c(22:29)
-Mar <- c(1:31)
-Apr <- c(1:)
+COVIDconfirmedGlobal <- "https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
 
 
-githubURL <- "https://github.com/thefactmachine/hex-binning-gis-data/raw/master/popDensity.RData"
-
-load(url(githubURL))
+dataRecoveredGlobal <-read.csv(url(COVIDrecoveredGlobal))
+dataRecoveredUS <-read.csv(url(COVIDrecoveredUS))
+dataRecoveredGlobal <-read.csv(url(COVIDconfirmedGlobal))
