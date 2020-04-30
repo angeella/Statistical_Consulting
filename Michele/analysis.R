@@ -3,10 +3,13 @@ require(COVID19)
 require(ggplot2)
 require(dplyr)
 source("Michele/lib_long2wide.R") # per convertire il dataset default dal long al wide format
+source("Michele/lib_merger.R") # per fare il join con altri dataset
 source("Michele/lib_policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 
-dat <- as.data.frame(COVID19::covid19(level=1))
+dat <- COVID19::covid19(level=1) %>% as.data.frame()
 
+dat <- merger(dat)
+head(dat)
 
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
@@ -33,14 +36,14 @@ require(cluster)
 
 # il wide format: mette in colonne separate le misure ripetute, sulla stessa riga per uno stesso individuo (o nazione nel nostro caso)
 stringency.wide <- long2wide(dat, id, time, policies) # strin...gency in wide... format, ahah
+head(stringency.wide)[,1:10]
 rownames(stringency.wide) <- stringency.wide[,1]
 stringency.wide <- stringency.wide[,-1]
-head(stringency.wide)[,1:10]
 
 d <- daisy(stringency.wide, metric = "gower") # calcola distanze con indicatrici per variabili qualitative
 stringency.clusters <- lapply(c("ward.D", "ward.D2", "single", "complete"), function(m) hclust(d, method = m))
 lapply(stringency.clusters, function(v) plot(as.dendrogram(v), type = "triangle", main=v$method, xlab=""))
-chosen <- stringency.clusters[[2]] # uso il Ward
+chosen <- stringency.clusters[[4]] # uso il complete
 
 require(maps)
 require(rnaturalearth)
@@ -49,18 +52,17 @@ require(rnaturalearthdata)
 for (ncl in 2:10) { # per ogni scelta di #cluster=k
   # calcola la classificazione
   aux <- data.frame(id=rownames(stringency.wide), cluster=cutree(chosen, k=ncl))
+  aux$id <- as.character(aux$id) # così non lo sento lamentarsi dopo
   newenc <- aux %>% left_join(dat[,c(id,index)], by=id) %>% group_by(cluster) %>% summarise(stringency=mean(stringency_index)) %>% as.data.frame()
   aux$cluster <- ordered(order(newenc$stringency, decreasing = T)[aux$cluster])
   
   # stampa l'andamento medio dello stringency index nel tempo nei vari cluster
-  aux2 <- aux %>%
-    left_join(dat[,c(id,time,index)], by=id)
-  require(boot)
   print(
-    aux2 %>%
+    dat[,c(id,time,index)] %>%
+      left_join(aux, by=id) %>%
       ggplot() +
-      geom_smooth(aes_string(x=time, y=index, color="cluster"), method = "loess") +
-      xlim(range(dat$date)) #+
+      geom_smooth(aes_string(x=time, y=index, color="cluster")) +
+      scale_fill_distiller(type = "seq") #+
       # ggtitle(paste("# cluster =", ncl))
   )
   
@@ -72,7 +74,6 @@ for (ncl in 2:10) { # per ogni scelta di #cluster=k
     ggtitle(paste("# cluster =", ncl))
   )
 }
-
 
 dat$id <- factor(dat$id, levels = as.character(rownames(stringency.wide)[chosen$order]))
 
