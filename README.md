@@ -12,7 +12,9 @@ Add here some ideas :)
     - https://en.wikipedia.org/wiki/Stay-at-home_order#2020_coronavirus_pandemic
     - https://en.wikipedia.org/wiki/Curfews_and_lockdowns_related_to_the_2019%E2%80%9320_coronavirus_pandemic
     - https://www.cdc.gov/coronavirus/2019-ncov/php/risk-assessment.html
-    
+4. State Ranking of cases: 
+    - https://www.worldometers.info/coronavirus/
+ 
    Data:
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
