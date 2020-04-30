@@ -1,82 +1,84 @@
 
-# require(rvest)
-# require(data.table)
-# require(pbapply)
-# require(parallel)
-# cl <- detectCores()
-# 
-# # https://github.com/CSSEGISandData/COVID-19
-# 
-# ## https://github.com/CSSEGISandData/COVID-19/tree/master/archived_data
-# # deprecated
-# 
-# ## https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
-# 
-# ### https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports
-# ### csv giornalieri, con casi|morti|guariti in colonna delle varie nazioni in riga
-# ### esclude gli USA
-# 
-# fmtin <- "(\\d+)-(\\d+)-(\\d+).csv"
-# repo <- "CSSEGISandData/COVID-19"
-# urls <- paste0("https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports", c("", "_us"))
-# files <- lapply(urls, function(u) read_html(u) %>% html_nodes("td.content a") %>% html_attr("href")) %>% unlist()
-# files <- sub("/blob/", "/raw/", sub("^/", "https://github.com/", files[grepl(fmtin, files)]))
-# dailyrep <- pblapply(files, function(v) {
-#   aux <- read.csv(v)
-#   colnames(aux) <- sub("^Lon.*$", "Lon", sub("^Lat.*$", "Lat", gsub("\\.", "_", colnames(aux))))
-#   aux$Last_Update <- sub("^.*?(\\d+)-(\\d+)-(\\d+)\\.csv$", "\\1-\\2-\\3", v) %>% as.Date(tryFormats = c("%m-%d-%Y"))
-#   aux
-# }, cl=cl) %>% rbindlist(fill = T) %>% as.data.frame()
-# summary(dailyrep)
-
-# packs <- c("coronavirus", "covid19.analytics", "covid19italy", "COVID19", "covid19us", "covid19france")
+require(COVID19)
+require(ggplot2)
+require(dplyr)
+source("Michele/lib_long2wide.R") # per convertire il dataset default dal long al wide format
+source("Michele/lib_policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 
 dat <- as.data.frame(COVID19::covid19(level=1))
 
-require(ggplot2)
 
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
-source("policies.R")
 demo <- colnames(dat)[grepl("^pop", colnames(dat))]
 geo <- c("country", "state", "city", "lat", "lng")
 index <- "stringency_index"
 id <- "id"
 time <- "date"
 
+isTRUE(length(setdiff(policies, colnames(dat)))==0)
+
 for (p in policies) {
   dat[[p]] <- ordered(as.character(dat[[p]]), levels=names(policies.levels[[p]]))
 }
 
-# policies.pca <- prcomp(scale(dat[,policies]))
-# matplot(apply(policies.pca$rotation^2,1,cumsum), type="l", ylim=c(0,1))
-# ggplot(policies.pca$rotation[,1:2]) + geom_text(aes(x=PC1, y=PC2, label=rownames(policies.pca$rotation))) + coord_fixed()
-# ggplot(cbind(as.data.frame(policies.pca$x), index=dat$stringency_index)) + geom_point(aes(x=PC1, y=PC2, color=index)) + scale_color_gradient(low = "green", high = "red")
+policies.pca <- prcomp(scale(sapply(dat[,policies], as.numeric))) # una PCA fatta coi piedi, che però rivela un po' dello stringency index
+plot(policies.pca)
+policies.pca$x <- cbind(as.data.frame(policies.pca$x), index=dat$stringency_index)
+ggplot(policies.pca$x) + geom_point(aes(x=PC1, y=PC2, color=index)) + scale_color_gradient(low = "green", high = "red")
+# a grandi linee lo stringency index è la prima PC delle politiche usate come quantitative
+# oppure una combinazione lineare delle prime due PC (vedete quel gradiente diagonale anche voi?)
 
-require(reshape2)
-stringency.wide <- do.call("cbind", lapply(policies, function(pol) {
-  # pol <- policies[1]
-  aux <- as.data.frame(dcast(dat, as.formula(paste(id, "~", time)), value.var=pol))
-  colnames(aux) <- paste0(pol, colnames(aux))
-  for (p in colnames(aux)[-1]) {
-    aux[[p]] <- ordered(as.character(aux[[p]]), levels=names(policies.levels[[pol]]))
-  }
-  aux
-}))
-rownames(stringency.wide) <- stringency.wide[,1]
-stringency.wide <- stringency.wide[,!grepl("id$", colnames(stringency.wide))]
-colnames(stringency.wide)
 require(cluster)
-d <- cluster::daisy(stringency.wide, metric = "gower")
-stringency.clusters <- lapply(c("ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid"), function(m) hclust(d, method = m))
-lapply(stringency.clusters, function(v) plot(v, hang=-1, main = v$method))
-chosen <- which(unlist(sapply(stringency.clusters, function(v) v$method=="ward.D2")))
 
-dat$id <- factor(dat$id, levels = as.character(rownames(stringency.wide)[stringency.clusters[[chosen]]$order]))
+# il wide format: mette in colonne separate le misure ripetute, sulla stessa riga per uno stesso individuo (o nazione nel nostro caso)
+stringency.wide <- long2wide(dat, id, time, policies) # strin...gency in wide... format, ahah
+rownames(stringency.wide) <- stringency.wide[,1]
+stringency.wide <- stringency.wide[,-1]
+head(stringency.wide)[,1:10]
+
+d <- daisy(stringency.wide, metric = "gower") # calcola distanze con indicatrici per variabili qualitative
+stringency.clusters <- lapply(c("ward.D", "ward.D2", "single", "complete"), function(m) hclust(d, method = m))
+lapply(stringency.clusters, function(v) plot(as.dendrogram(v), type = "triangle", main=v$method, xlab=""))
+chosen <- stringency.clusters[[2]] # uso il Ward
 
 require(maps)
-require("rnaturalearth")
-require("rnaturalearthdata")
+require(rnaturalearth)
+require(rnaturalearthdata)
+
+for (ncl in 2:10) { # per ogni scelta di #cluster=k
+  # calcola la classificazione
+  aux <- data.frame(id=rownames(stringency.wide), cluster=cutree(chosen, k=ncl))
+  newenc <- aux %>% left_join(dat[,c(id,index)], by=id) %>% group_by(cluster) %>% summarise(stringency=mean(stringency_index)) %>% as.data.frame()
+  aux$cluster <- ordered(order(newenc$stringency, decreasing = T)[aux$cluster])
+  
+  # stampa l'andamento medio dello stringency index nel tempo nei vari cluster
+  aux2 <- aux %>%
+    left_join(dat[,c(id,time,index)], by=id)
+  require(boot)
+  print(
+    aux2 %>%
+      ggplot() +
+      geom_smooth(aes_string(x=time, y=index, color="cluster"), method = "loess") +
+      xlim(range(dat$date)) #+
+      # ggtitle(paste("# cluster =", ncl))
+  )
+  
+  # mostra i cluster su mappa
+  print(ne_countries(scale = "medium", returnclass = "sf") %>%
+    left_join(aux, by=c("iso_a3"="id")) %>%
+    ggplot() +
+    geom_sf(aes(fill=cluster), lwd=0) +
+    ggtitle(paste("# cluster =", ncl))
+  )
+}
+
+
+dat$id <- factor(dat$id, levels = as.character(rownames(stringency.wide)[chosen$order]))
+
+require(maps)
+require(rnaturalearth)
+require(rnaturalearthdata)
 
 isTRUE(max(table(x=dat$id, y=dat$date)) == 1)
 

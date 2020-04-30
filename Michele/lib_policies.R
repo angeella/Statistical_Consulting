@@ -38,7 +38,7 @@ policies.levels <- list(
     "3"="Ban on high-risk regions",
     "4"="Total border closure"
   ),
-  testing_framework=list(
+  testing_policy=list(
     "0"="No testing policy",
     "1"="Only those who both (a) have symptoms AND (b) meet specific criteria (eg key workers, admitted to hospital, came into contact with a known case, returned from overseas)",
     "2"="testing of anyone showing COVID-19 symptoms",
