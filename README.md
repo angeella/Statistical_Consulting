@@ -11,6 +11,7 @@ Add here some ideas :)
     - https://www.businessinsider.com/countries-on-lockdown-coronavirus-italy-2020-3?IR=T
     - https://en.wikipedia.org/wiki/Stay-at-home_order#2020_coronavirus_pandemic
     - https://en.wikipedia.org/wiki/Curfews_and_lockdowns_related_to_the_2019%E2%80%9320_coronavirus_pandemic
+    
    Data:
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
