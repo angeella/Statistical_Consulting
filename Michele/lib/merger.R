@@ -124,7 +124,22 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   
   #   Data:
   #   - https://covidtracker.bsg.ox.ac.uk/
+  
+    # reply: reimplementato dalla reference successiva
+  
   #   - https://github.com/OxCGRT/covid-policy-tracker/
+  
+  ox <- read.csv("https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest_withnotes.csv")
+  
+  ox$Date <- ox$Date %>%
+    sub(pattern = "^(\\d{4})(\\d{2})(\\d{2})$", replacement = "\\1-\\2-\\3") %>%
+    as.Date("%Y-%m-%d")
+  ox$CountryName <- NULL
+  colnames(ox)[1:2] <- c("id", "date")
+  
+  colnames(ox) <- paste0("ox.", colnames(ox))
+  
+  dataset <- dataset %>% left_join(ox, by=c("id"="ox.id", "date"="ox.date"))
   
   return(dataset)
 }
