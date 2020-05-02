@@ -60,8 +60,12 @@ dat <- #list(countries=
 # 
 # dat$states[,setdiff(colnames(dat$states), policies)] %>% left_join(dat$countries[,c("id")], by=c("id", "date"))
 
-dat <- merger(dat)
+dat <- merger(dat, to.lag = c("confirmed", policies))
+
+# all(dat$confirmed.diff + dat$recovered + dat$deaths >= 0)
 head(dat)
+
+stop("usa solo dati con level = 2 o escludi africa etc")
 
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
@@ -71,6 +75,16 @@ index <- "stringency_index"
 id <- "id"
 time <- "date"
 
+# qui mostro se c'è un'escalation (rosso) o una de-escalation (verde) delle misure
+dat$variaz <- c("de-escalation", "invariata", "escalation", "mista")[dat[,paste0(policies, ".diff")] %>% apply(1, function(v) {
+  w <- range(v)
+  if (all(w==0)) { 2 } else { if (all(w!=0)) { 4 } else { (w[w %>% abs() %>% which.max()] %>% sign()) + 2 }}
+})] %>% ordered(levels=c("de-escalation", "invariata", "escalation", "mista"))
+dat %>% ggplot() + geom_tile(aes(x=date, y=id, fill=variaz)) +
+  scale_fill_manual(values=c("green", "white", "red", "blue"))
+
+dat[dat$id=="ITA",] %>% ggplot(aes(x=date, y=log(confirmed.diff))) + geom_line() + geom_smooth(method="gam") + geom_vline(data=dat[dat$id=="ITA" & dat$variaz!="invariata",], aes(xintercept=date+14, color=paste(variaz, "14 gg prima")))
+
 isTRUE(length(setdiff(policies, colnames(dat)))==0)
 
 for (p in policies) {
@@ -78,11 +92,23 @@ for (p in policies) {
 }
 
 policies.pca <- prcomp(scale(sapply(dat[,policies], as.numeric))) # una PCA fatta coi piedi, che però rivela un po' dello stringency index
+policies.pca$rotation[,1:2]
 plot(policies.pca)
 policies.pca$x <- cbind(as.data.frame(policies.pca$x), index=dat$stringency_index)
-ggplot(policies.pca$x) + geom_point(aes(x=PC1, y=PC2, color=index)) + scale_color_gradient(low = "green", high = "red")
 # a grandi linee lo stringency index è la prima PC delle politiche usate come quantitative
 # oppure una combinazione lineare delle prime due PC (vedete quel gradiente diagonale anche voi?)
+(t(policies.pca$rotation)*sign(coef(lm(index ~ ., data = policies.pca$x))[-1])) %>% t() %>% round(3)
+
+ggplot(policies.pca$x) + geom_point(aes(x=PC1, y=PC2, color=index)) + scale_color_continuous(low="yellow", high="red")
+
+policies.pca$x$id <- factor(dat$id)
+policies.pca$x[policies.pca$x$id %>% unique(), ] %>%
+  ggplot(aes(x=PC1, y=PC2)) +
+  # geom_point(aes(color=index)) +
+  # scale_color_gradient(low = "green", high = "red") +
+  geom_path(aes(color=id), size=0.2) +
+  geom_smooth(method = "loess", size=0.5, se = FALSE) +
+  theme(legend.position = "none")
 
 require(cluster)
 
