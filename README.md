@@ -19,3 +19,4 @@ Add here some ideas :)
    Data:
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
+ 5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
