@@ -10,24 +10,23 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   # 1. Only confirmed cases from https://github.com/CSSEGISandData/COVID-19/tree/master/who_covid_19_situation_reports;
   
   who <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/who_covid_19_situation_reports/who_covid_19_sit_rep_time_series/who_covid_19_sit_rep_time_series.csv", fileEncoding = "UTF-8")
+  who$Country.Region <- as.character(who$Country.Region)
   who <- who[who$Province.States=="",]
+  who$Country.Region[grepl("S.*Martin", who$Country.Region)] <- "Collectivity of Saint Martin"
   who$id <- who$Country.Region %>% countrycode(origin = "country.name", destination = "iso3c", warn=F)
+  who$id[who$Country.Region %>% grepl(pattern = "Cura.*ao")] <- "CUW"
+  who$id[who$Country.Region %>% grepl(pattern = "S.*Barth")] <- "BLM"
+  who$id[who$Country.Region %>% grepl(pattern = "R.*union")] <- "REU"
+  who$id[who$Country.Region=="Kosovo"] <- "RKS" # non e' iso3
   
-  writeLines("Adottato identificativo del Kosovo dal dataset del covid")
-  who$id[who$Country.Region=="Kosovo"] <- dataset$id[grepl("Kosovo", dataset$country)][1]
-  
-  writeLines("Dato duplicato Saint Martin, Sint Marteen, eliminato il secondo")
-  who$id[who$Country.Region=="Saint Martin"] <- who$id[grepl("S*Maart", who$Country.Region)]
-  who <- who[!grepl("S*Maart", who$Country.Region),]
-  
-  if (isTRUE(all(!is.na(who$id)))) {
-    writeLines("tutte le nazioni della WHO sono state ricodificate correttamente")
-  } else {
+  if (!isTRUE(all(!is.na(who$id)))) {
     warning(paste(paste(who$Country.Region[is.na(who$id)] %>% unique(), collapse = ", "), "non sono state ricodificate correttamente!"))
   }
   
   who <- who[,setdiff(colnames(who), c("Province.States", "Country.Region", "WHO.region"))]
-  if (!isTRUE(all(table(who$id)==1))) warnings("attenzione, identificativo non univoco per i dati who")
+  if (!isTRUE(all(table(who$id) < 2))) {
+    warning("attenzione, identificativo non univoco per i dati who")
+  }
   aux <- colnames(who) != "id"
   colnames(who)[aux] <- colnames(who)[aux] %>% as.Date("X%m.%d.%Y") %>% format()
   aux <- colnames(who)[aux]
@@ -111,12 +110,24 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   wrldmtr <- wrldmtr[,c("Country,Other", "TotalCases", "TotalDeaths", "TotalRecovered", "ActiveCases", "Serious,Critical", "Deaths/1M pop", "TotalTests", "Tests/1M pop")]
   colnames(wrldmtr) <- c("country", paste0("wm.", c("cases.total", "deaths.total", "recovered.total", "cases.active", "serious.critical", "deaths/1Mpop", "tests.tot", "tests/1Mpop")))
   wrldmtr <- wrldmtr[,c("country", sort(colnames(wrldmtr)[-1]))]
+  wrldmtr <- wrldmtr[!(wrldmtr$country %in% c("North America", "Europe", "Asia", "South America", "Oceania", "Africa", "World", "Total:", "", "MS Zaandam", "Diamond Princess", "Channel Islands")),]
+  wrldmtr$country[grepl("CAR", wrldmtr$country)] <- "Central African Republic"
+  wrldmtr$country[grepl("S.*Barth", wrldmtr$country)] <- "St. Barthélemy"
+  wrldmtr$country[grepl("S.*Martin", wrldmtr$country)] <- "Collectivity of Saint Martin"
+  
   wrldmtr$id <- wrldmtr$country %>% countrycode(origin = "country.name", destination = "iso3c")
-  wrldmtr <- wrldmtr[wrldmtr$country!="Saint Martin",] # duplicato come prima
+  
   wrldmtr$country <- NULL
   
   aux <- setdiff(colnames(wrldmtr), "id")
-  wrldmtr[,aux] <- wrldmtr[,aux] %>% sapply(as.character) %>% gsub(pattern = ",", replacement = "") %>% as.numeric()
+  wrldmtr[,aux] <- wrldmtr[,aux] %>%
+    sapply(as.character) %>%
+    sapply(gsub, pattern = ",", replacement = "") %>%
+    as.vector()
+  for (p in aux) {
+    wrldmtr[grepl("^\\s*$", wrldmtr[,p]),p] <- NA
+    wrldmtr[,p] <- suppressWarnings(as.numeric(wrldmtr[,p]))
+  }
   
   dataset <- dataset %>% left_join(wrldmtr, by="id")
   
@@ -134,10 +145,11 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
     as.Date("%Y-%m-%d")
   ox$CountryName <- NULL
   colnames(ox)[1:2] <- c("id", "date")
+  ox$id <- as.character(ox$id)
   
-  colnames(ox) <- paste0("ox.", colnames(ox))
+  colnames(ox)[-c(1:2)] <- paste0("ox.", colnames(ox)[-c(1:2)])
   
-  dataset <- dataset %>% left_join(ox, by=c("id"="ox.id", "date"="ox.date"))
+  dataset <- dataset %>% left_join(ox, by=c("id", "date"))
   
   return(dataset)
 }
