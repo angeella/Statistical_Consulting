@@ -20,10 +20,9 @@ Add here some ideas :)
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
  5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
+ 6. Updating policies lockdown reference: https://www.imf.org/en/Topics/imf-and-covid19/Policy-Responses-to-COVID-19
 
+Some comments about McKinsey report:
 
-First analysis to do:
-
- 1. Temporal correlation between R0 and changing of mobility;
- 2. Correlation between number of tests and confirmed;
- 3. 
+ 1. **Temporal correlation between R0 and changing of mobility**: It seems that a mobiity reduction during lockdowns is roughly correlated with reductions in transmission, in general implementation of public health measures leading to reduced mobility (e.g. closure of public spaces, lock downs, closure schools) have successsgully reduced COVID-19 transmission. However, in SOUTH KOREA they implement robust testing and tracing than reducing in mobility, in ITALY large portion of population was infected before lockdown measures were enforced, making trasmission more difficult to control even after lockdown, and in NORWAY the geographical and environmental factors contribute to naturally low rates of spread despite limited control measures. THe seemingly low drop in Rt corresponds to a 40% decrease from baseline. 
+ 2. **Plot incremental COVID cases and conducted tests**: Early testing and tracking capacity has enabled some countries to contain incremental cases. Evidence of how the confirmed cases decrease as the countries expandeded to a mass testing approach;
