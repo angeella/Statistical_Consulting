@@ -16,7 +16,7 @@ require(rnaturalearthdata)
 
 # librerie
 source("Michele/lib/long2wide.R") # per convertire il dataset default dal long al wide format
-source("Michele/lib/merger.R") # per fare il join con altri dataset
+source("Michele/lib/merger.R", encoding="unknown") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 source("Michele/lib/lagdata.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 
