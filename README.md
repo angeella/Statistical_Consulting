@@ -20,3 +20,10 @@ Add here some ideas :)
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
  5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
+
+
+First analysis to do:
+
+ 1. Temporal correlation between R0 and changing of mobility;
+ 2. Correlation between number of tests and confirmed;
+ 3. 
