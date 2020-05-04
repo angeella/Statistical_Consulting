@@ -112,10 +112,10 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   wrldmtr <- wrldmtr[,c("country", sort(colnames(wrldmtr)[-1]))]
   wrldmtr <- wrldmtr[!(wrldmtr$country %in% c("North America", "Europe", "Asia", "South America", "Oceania", "Africa", "World", "Total:", "", "MS Zaandam", "Diamond Princess", "Channel Islands")),]
   wrldmtr$country[grepl("CAR", wrldmtr$country)] <- "Central African Republic"
-  wrldmtr$country[grepl("S.*Barth", wrldmtr$country)] <- "St. Barthélemy"
   wrldmtr$country[grepl("S.*Martin", wrldmtr$country)] <- "Collectivity of Saint Martin"
   
-  wrldmtr$id <- wrldmtr$country %>% countrycode(origin = "country.name", destination = "iso3c")
+  wrldmtr$id <- wrldmtr$country %>% countrycode(origin = "country.name", destination = "iso3c", warn=F)
+  wrldmtr$id[grepl("S.*Barth", wrldmtr$country)] <- "BLM"
   
   wrldmtr$country <- NULL
   
