@@ -134,6 +134,10 @@ plot(fdobj)
 
 res <- funFEM(fdobj, model = "all", K = 2:6)
 res$K
+# di base sto pacchetto seleziona solo due cluster all'inizio (quelli che hanno fatto qualcosa
+# /quelli che non hanno fatto nulla), togliendo l'ultimo cluster e rerunnandolo 
+# mi seleziona 4 cluster diversi, di base le misture rimangono significative solo su due
+# noi sceglieremo un modello con 3/4 cluster in ogni caso direi
 
 SI[res$cls==1,1]
 SI[res$cls==2,1]
@@ -172,4 +176,5 @@ res2 <- funHDDC(fdobj, model = c('AkjBkQkDk', 'AkjBQkDk', 'AkBkQkDk', 'ABkQkDk',
 
 # statisticamente non ci sono differenze significative tra le curve per cui K=1
 # comunque il secondo modello migliore è K=4, che direi che per noi è perfetto
+
 
