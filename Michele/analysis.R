@@ -16,52 +16,11 @@ require(rnaturalearthdata)
 
 # librerie
 source("Michele/lib/long2wide.R") # per convertire il dataset default dal long al wide format
-source("Michele/lib/merger.R") # per fare il join con altri dataset
+source("Michele/lib/merger.R", encoding="unknown") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 source("Michele/lib/lagdata.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 
-# vedi https://github.com/covid19datahub/COVID19
-dat <- #list(countries=
-  COVID19::covid19(level=1) %>% as.data.frame()
-#   ,states   =COVID19::covid19(level=2) %>% as.data.frame()
-# )
-# dat$states <- dat$states[,!sapply(dat$states, function(v) all(is.na(v)))]
-# countrycode(dat$states$id %>% unique(), origin = "country.name", destination = "iso3c")
-# 
-# dat$states$id2 <- dat$states$id
-# dat$states$id <- dat$states$id %>% sub(pattern="^([A-Z]+).*?$", replacement="\\1")
-# dat$states$id2 <- dat$states$id %>% countrycode(origin = "iso3c", destination = "iso2c")
-# 
-# isTRUE(all(dat$states$id %in% dat$countries$id))
-# 
-# A <- dat$states[,c("id2", "state")] %>% distinct()
-# A$state <- A$state %>% stri_trans_general("Latin-ASCII")
-# 
-# A$state %>% str_extract_all("[^\\s]+") %>% unlist() %>% table() %>% sort()
-# 
-# B <- ISOcodes::ISO_3166_2[,c("Code", "Name")]
-# colnames(B) <- c("id2sub", "state")
-# B$id2 <- B$id2sub %>% sub(pattern = "-.*?$", replacement = "")
-# B$state <- B$state %>% stri_trans_general("Latin-ASCII")
-# 
-# lapply(unique(A$id2), function(id2) {
-#   Aaux <- A[A$id2==id2,]
-#   Baux <- B[B$id2==id2,]
-#   daux <- stringdistmatrix(Aaux$state, Baux$state)
-#   iaux <- daux %>% apply(1, function(v) which.min(v)[1]) %>% unlist()
-#   res <- data.frame(Aaux$state, Baux$state[iaux])
-#   res[res[,2] %in% names(which(table(res[,2]) > 1)),2] <- NA
-#   res
-# })
-# 
-# dat$states[,c("id2", "state")] %>% distinct() %>% left_join(aux, by=c("id2", "state")) %>% as.data.frame() %>% summary()
-# aux[grepl("^AUS-",aux$Code),]
-# 
-# ggplot() +
-#   geom_sf(data=ne_countries(scale = "medium", returnclass = "sf"), fill="green") +
-#   geom_text(data=dat$states, aes(x=lng, y=lat, label=state), cex=0.5)
-# 
-# dat$states[,setdiff(colnames(dat$states), policies)] %>% left_join(dat$countries[,c("id")], by=c("id", "date"))
+dat <- COVID19::covid19(level=1) %>% as.data.frame()
 
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
@@ -71,9 +30,9 @@ index <- "stringency_index"
 id <- "id"
 time <- "date"
 
-dat <- dat %>% lagdata(vars=c(cumul, policies, index), lag = 1, save.lag = F, save.var = T)
-
 dat <- merger(dat)
+
+dat <- dat %>% lagdata(vars=c(cumul, policies, index), lag = 1, save.lag = F, save.var = T)
 
 # all(dat$confirmed.diff + dat$recovered + dat$deaths >= 0)
 head(dat)

@@ -112,10 +112,10 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   wrldmtr <- wrldmtr[,c("country", sort(colnames(wrldmtr)[-1]))]
   wrldmtr <- wrldmtr[!(wrldmtr$country %in% c("North America", "Europe", "Asia", "South America", "Oceania", "Africa", "World", "Total:", "", "MS Zaandam", "Diamond Princess", "Channel Islands")),]
   wrldmtr$country[grepl("CAR", wrldmtr$country)] <- "Central African Republic"
-  wrldmtr$country[grepl("S.*Barth", wrldmtr$country)] <- "St. Barthélemy"
   wrldmtr$country[grepl("S.*Martin", wrldmtr$country)] <- "Collectivity of Saint Martin"
   
-  wrldmtr$id <- wrldmtr$country %>% countrycode(origin = "country.name", destination = "iso3c")
+  wrldmtr$id <- wrldmtr$country %>% countrycode(origin = "country.name", destination = "iso3c", warn=F)
+  wrldmtr$id[grepl("S.*Barth", wrldmtr$country)] <- "BLM"
   
   wrldmtr$country <- NULL
   
@@ -150,6 +150,23 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
   colnames(ox)[-c(1:2)] <- paste0("ox.", colnames(ox)[-c(1:2)])
   
   dataset <- dataset %>% left_join(ox, by=c("id", "date"))
+  
+  # 5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
+  
+  require(countrycode)
+  require(dplyr)
+  
+  mobility <- read.csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=e0c5a582159f5662")
+  mobility$id <- mobility$country_region_code %>% countrycode(origin = "iso2c", destination = "iso3c")
+  mobility <- mobility[mobility$sub_region_1=="", setdiff(colnames(mobility), c("country_region_code", "country_region", "sub_region_1", "sub_region_2"))]
+  
+  if (!(all(table(mobility$id, mobility$date) < 2))) {
+    stop("identificativo non univoco in Google Mobility Data")
+  }
+  
+  mobility$date <- mobility$date %>% as.Date("%Y-%m-%d")
+  
+  dataset <- dataset %>% left_join(mobility, by=c("id", "date")) %>% as.data.frame()
   
   return(dataset)
 }
