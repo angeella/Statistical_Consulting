@@ -1,5 +1,20 @@
 library(COVID19)
+library("cluster")
+library("factoextra")
+library("magrittr")
 data <- covid19()
+
+data1 <- data[,c(3:21)]
+
+res.dist <- get_dist(data1, stand = TRUE, method = "pearson")
+
+
+fdobj <- smooth.basis(day.5, CanadianWeather$dailyAv[,,"Temperature.C"],basis,
+                      fdnames=list("Day", "Station", "Deg C"))$fd
+res = funFEM(fdobj,K=4)
+
+
+
 
 table(data$stringency_index) #Come é calcolato?
 table(data$contact_tracing) #0     1     2
@@ -18,7 +33,7 @@ table(data$country)
 #Possibile suddivisione:
 
 #1. Olanda, Portogallo, Norvegia (no social activity)
-#2. Italy, China, France, Spain (lockdown)
+#2. Italy, China, France, Spain, USA, Russia (lockdown)
 #3. Finlandia (school closed and frontiers)
 #4. Danimarca (school open but no social life)
 #5. Austria, Albania (some open shops but restriction to go out)
