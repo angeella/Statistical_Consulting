@@ -26,7 +26,7 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
     warning(paste(paste(who$Country.Region[is.na(who$id)] %>% unique(), collapse = ", "), "non sono state ricodificate correttamente!"))
   }
   
-  who <- who[,setdiff(colnames(who), c("Country.Region", "WHO.region"))]
+  who <- who[,setdiff(colnames(who), c("Province.States", "Country.Region", "WHO.region"))]
   if (!isTRUE(all(table(who$id)==1))) warnings("attenzione, identificativo non univoco per i dati who")
   aux <- colnames(who) != "id"
   colnames(who)[aux] <- colnames(who)[aux] %>% as.Date("X%m.%d.%Y") %>% format()
@@ -64,6 +64,7 @@ merger <- function(dataset) { # dataset from COVID19::covid19(...)
                         FROM oecd
                         GROUP BY id, type
                       )')
+  dbDisconnect(mydb)
   oecd <- oecd %>% dcast(id ~ type, value.var="beds")
   oecd <- oecd[,c("id", "ACUTE", "TOT")]
   colnames(oecd) <- c("id", "beds.icu", "beds.tot")
