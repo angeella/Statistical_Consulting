@@ -12,6 +12,7 @@ Add here some ideas :)
     - https://en.wikipedia.org/wiki/Stay-at-home_order#2020_coronavirus_pandemic
     - https://en.wikipedia.org/wiki/Curfews_and_lockdowns_related_to_the_2019%E2%80%9320_coronavirus_pandemic
     - https://www.cdc.gov/coronavirus/2019-ncov/php/risk-assessment.html
+    - Lockdown policies analysis: https://www.mckinsey.com/~/media/McKinsey/Business%20Functions/Risk/Our%20Insights/COVID%2019%20Implications%20for%20business/COVID%2019%20April%2013/COVID-19-Facts-and-Insights-April-24.ashx
 4. State Ranking of cases: 
     - https://www.worldometers.info/coronavirus/
  
