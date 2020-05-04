@@ -7,6 +7,7 @@ require(ISOcodes)
 require(stringr)
 require(stringi)
 require(stringdist)
+require(shiny)
 
 # per mappe...
 require(maps)
@@ -17,7 +18,9 @@ require(rnaturalearthdata)
 source("Michele/lib/long2wide.R") # per convertire il dataset default dal long al wide format
 source("Michele/lib/merger.R") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
+source("Michele/lib/lagdata.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 
+# vedi https://github.com/covid19datahub/COVID19
 dat <- #list(countries=
   COVID19::covid19(level=1) %>% as.data.frame()
 #   ,states   =COVID19::covid19(level=2) %>% as.data.frame()
@@ -60,13 +63,6 @@ dat <- #list(countries=
 # 
 # dat$states[,setdiff(colnames(dat$states), policies)] %>% left_join(dat$countries[,c("id")], by=c("id", "date"))
 
-dat <- merger(dat, to.lag = c("confirmed", policies))
-
-# all(dat$confirmed.diff + dat$recovered + dat$deaths >= 0)
-head(dat)
-
-stop("usa solo dati con level = 2 o escludi africa etc")
-
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
 demo <- colnames(dat)[grepl("^pop", colnames(dat))]
@@ -75,15 +71,31 @@ index <- "stringency_index"
 id <- "id"
 time <- "date"
 
-# qui mostro se c'è un'escalation (rosso) o una de-escalation (verde) delle misure
-dat$variaz <- c("de-escalation", "invariata", "escalation", "mista")[dat[,paste0(policies, ".diff")] %>% apply(1, function(v) {
-  w <- range(v)
-  if (all(w==0)) { 2 } else { if (all(w!=0)) { 4 } else { (w[w %>% abs() %>% which.max()] %>% sign()) + 2 }}
-})] %>% ordered(levels=c("de-escalation", "invariata", "escalation", "mista"))
-dat %>% ggplot() + geom_tile(aes(x=date, y=id, fill=variaz)) +
-  scale_fill_manual(values=c("green", "white", "red", "blue"))
+dat <- dat %>% lagdata(vars=c(cumul, policies, index), lag = 1, save.lag = F, save.var = T)
 
-dat[dat$id=="ITA",] %>% ggplot(aes(x=date, y=log(confirmed.diff))) + geom_line() + geom_smooth(method="gam") + geom_vline(data=dat[dat$id=="ITA" & dat$variaz!="invariata",], aes(xintercept=date+14, color=paste(variaz, "14 gg prima")))
+dat <- merger(dat)
+
+# all(dat$confirmed.diff + dat$recovered + dat$deaths >= 0)
+head(dat)
+
+stop("usa solo dati con level = 2 o escludi africa etc")
+
+# qui mostro se c'è un'escalation (rosso) o una de-escalation (verde) delle misure
+dat$policy_change <- dat$stringency_index.var1 %>%
+  sign() %>%
+  ordered()
+dat %>%
+  ggplot() +
+  geom_tile(aes(x=date, y=id, fill=policy_change)) +
+  scale_fill_manual(values=c("green", "white", "red"))
+
+dat[dat$id=="ITA",] %>%
+  ggplot(aes(x=date, y=confirmed)) +
+  geom_line() +
+  geom_smooth(method="gam") +
+  geom_vline(aes(xintercept=date+11, color=policy_change)) +
+  scale_color_manual(values=c("green", NA, "red", NA)) +
+  scale_y_continuous(trans = 'log10')
 
 isTRUE(length(setdiff(policies, colnames(dat)))==0)
 
@@ -92,14 +104,26 @@ for (p in policies) {
 }
 
 policies.pca <- prcomp(scale(sapply(dat[,policies], as.numeric))) # una PCA fatta coi piedi, che però rivela un po' dello stringency index
-policies.pca$rotation[,1:2]
+policies.pca$x <- as.data.frame(policies.pca$x)
+policies.pca$x <- policies.pca$x %>% sapply(scale, scale=T)
+policies.pca$x <- policies.pca$x %>% cbind(index=dat$stringency_index)
+policies.pca$x <- as.data.frame(policies.pca$x)
 plot(policies.pca)
-policies.pca$x <- cbind(as.data.frame(policies.pca$x), index=dat$stringency_index)
+
+lm(index ~ ., data=policies.pca$x) %>% anova()
+
+policies.pca$x$id <- dat$id
+policies.pca$x[dat$pop > 50000000,] %>%
+  ggplot(aes(x=PC1, y=PC2)) +
+  geom_smooth(aes(group=id, color=id), size=0.5, se=F) #+
+  # geom_line(aes(color=id))
+  # scale_color_continuous(low="yellow", high="red")
+  
+
+policies.pca$rotation[,1:2]
 # a grandi linee lo stringency index è la prima PC delle politiche usate come quantitative
 # oppure una combinazione lineare delle prime due PC (vedete quel gradiente diagonale anche voi?)
 (t(policies.pca$rotation)*sign(coef(lm(index ~ ., data = policies.pca$x))[-1])) %>% t() %>% round(3)
-
-ggplot(policies.pca$x) + geom_point(aes(x=PC1, y=PC2, color=index)) + scale_color_continuous(low="yellow", high="red")
 
 policies.pca$x$id <- factor(dat$id)
 policies.pca$x[policies.pca$x$id %>% unique(), ] %>%

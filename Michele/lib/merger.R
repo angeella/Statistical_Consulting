@@ -134,30 +134,5 @@ merger <- function(dataset, to.lag=c("confirmed")) { # dataset from COVID19::cov
   
   dataset <- dataset %>% left_join(ox, by=c("id"="ox.id", "date"="ox.date"))
   
-    # calcola le variazioni
-  
-  deltas <- dataset[,c("id", "date", to.lag)]
-  deltas[,-c(1:2)] <- sapply(deltas[,-c(1:2)], function(v) v %>% as.character() %>% as.numeric())
-  # pensavo di usare SQL qualora la frequenza degli aggiornamenti fosse variabile
-  # sul mio il seguente codice schianta -- Michele.
-  # deltas <- deltas %>% reshape(direction = "long",
-  #                    idvar = c("id", "date"),
-  #                    timevar= "policytype",
-  #                    v.names = "policyvalue", varying = list(to.lag), times=to.lag)
-  # deltas <- deltas[,c("id", "date", "policytype", "policyvalue")]
-  # deltas <- deltas[deltas %>% complete.cases(),]
-  deltas$date <- as.Date(deltas$date) # per assicurarmi che l'incremento di un giorno poi funzioni
-  deltas.prev <- deltas
-  deltas.prev$date <- deltas.prev$date + 1 # vedi prima
-  colnames(deltas.prev) <- colnames(deltas.prev) %>% paste0(".diff")
-  
-  deltas <- deltas %>% left_join(deltas.prev, by=c("id"="id.diff", "date"="date.diff"))
-  aux <- paste0(to.lag,".diff")
-  deltas[is.na(deltas)] <- 0
-  deltas[,aux] <- deltas[,to.lag] - deltas[,aux]
-  deltas <- deltas[,c("id", "date", aux)]
-  
-  dataset <- dataset %>% left_join(deltas, by=c("id", "date"))
-  
   return(dataset)
 }
