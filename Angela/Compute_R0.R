@@ -21,11 +21,11 @@ R0_compute <- function(state, dataset){
   mean  <- 1+(beta1*duration)
   lower <- 1+((beta1-1.96*sd_beta1)*duration)
   upper <- 1+((beta1+1.96*sd_beta1)*duration)
-  label<-as.Date(substr(dat_c$date,1,10))[3:(days-2)]
+  date<-as.Date(substr(dat_c$date,1,10))[3:(days-2)]
   
   
-  df <- data.frame(label, mean, lower, upper)
-  colnames(df) <- c("label", paste0("mean.", state),paste0("lower.", state),paste0("upper.", state))
+  df <- data.frame(date, mean, lower, upper)
+  #colnames(df) <- c("date", paste0("mean.", state),paste0("lower.", state),paste0("upper.", state))
   return(df)
 }
 
