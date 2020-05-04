@@ -1,5 +1,5 @@
 
-merger <- function(dataset, to.lag=c("confirmed")) { # dataset from COVID19::covid19(...)
+merger <- function(dataset) { # dataset from COVID19::covid19(...)
   require(countrycode)
   require(dplyr)
   require(reshape2)
@@ -9,19 +9,22 @@ merger <- function(dataset, to.lag=c("confirmed")) { # dataset from COVID19::cov
   
   # 1. Only confirmed cases from https://github.com/CSSEGISandData/COVID-19/tree/master/who_covid_19_situation_reports;
   
-  who <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/who_covid_19_situation_reports/who_covid_19_sit_rep_time_series/who_covid_19_sit_rep_time_series.csv")
+  who <- read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/who_covid_19_situation_reports/who_covid_19_sit_rep_time_series/who_covid_19_sit_rep_time_series.csv", fileEncoding = "UTF-8")
+  who <- who[who$Province.States=="",]
+  who$id <- who$Country.Region %>% countrycode(origin = "country.name", destination = "iso3c", warn=F)
   
-  who <- who[who$Province.States=="", setdiff(colnames(who), "Province.States")]
-  who$id <- who$Country.Region %>% countrycode(origin = "country.name", destination = "iso3c")
-  
-  warnings("Adottato identificativo del Kosovo dal dataset del covid")
+  writeLines("Adottato identificativo del Kosovo dal dataset del covid")
   who$id[who$Country.Region=="Kosovo"] <- dataset$id[grepl("Kosovo", dataset$country)][1]
   
-  warnings("Dato duplicato Saint Martin, Sint Marteen, eliminato il secondo")
+  writeLines("Dato duplicato Saint Martin, Sint Marteen, eliminato il secondo")
   who$id[who$Country.Region=="Saint Martin"] <- who$id[grepl("S*Maart", who$Country.Region)]
   who <- who[!grepl("S*Maart", who$Country.Region),]
   
-  print(isTRUE(all(!is.na(who$id))))
+  if (isTRUE(all(!is.na(who$id)))) {
+    writeLines("tutte le nazioni della WHO sono state ricodificate correttamente")
+  } else {
+    warning(paste(paste(who$Country.Region[is.na(who$id)] %>% unique(), collapse = ", "), "non sono state ricodificate correttamente!"))
+  }
   
   who <- who[,setdiff(colnames(who), c("Country.Region", "WHO.region"))]
   if (!isTRUE(all(table(who$id)==1))) warnings("attenzione, identificativo non univoco per i dati who")
@@ -40,6 +43,7 @@ merger <- function(dataset, to.lag=c("confirmed")) { # dataset from COVID19::cov
   
   oecd <- list.files(path="Data", pattern = "^DP_LIVE_.*.csv$", full.names = T) %>% lapply(read.csv)
   oecd <- oecd %>% do.call(what = "rbind") %>% distinct()
+  colnames(oecd) <- c("LOCATION", "INDICATOR", "SUBJECT", "MEASURE", "FREQUENCY", "TIME", "Value", "Flag.Codes")
   oecd <- oecd[oecd %>% complete.cases(),]
   # oecd <- oecd[oecd$Flag.Codes=="",]
   warnings("quali sono le codifiche delle flag di OECD in DATA?")
