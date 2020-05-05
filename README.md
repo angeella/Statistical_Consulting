@@ -32,3 +32,6 @@ Some comments about McKinsey report:
  1. https://www.ece.uvic.ca/~bctill/papers/mocap/Guo_2002.pdf
  2. https://www.stat.tamu.edu/~carroll/ftp/2006.papers.directory/rssb_b6165.pdf
 
+**References contact lockdown**:
+ 1. https://www.ecdc.europa.eu/sites/default/files/documents/Contact-tracing-Public-health-management-persons-including-healthcare-workers-having-had-contact-with-COVID-19-cases-in-the-European-Union%E2%80%93second-update_0.pdf
+ 2. https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-use-face-masks-community.pdf
