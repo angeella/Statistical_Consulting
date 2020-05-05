@@ -22,7 +22,7 @@ Add here some ideas :)
     - NEW!!!! https://www.commonwealthfund.org/blog/2020/how-us-compares-other-countries-responding-covid-19-populations-risk-health-system (health and pop variables, only 23 countries)
  5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
  6. Updating policies lockdown reference: https://www.imf.org/en/Topics/imf-and-covid19/Policy-Responses-to-COVID-19
-
+ 7. References stringency index: https://www.bsg.ox.ac.uk/sites/default/files/Calculation%20and%20presentation%20of%20the%20Stringency%20Index.pdf; https://www.bsg.ox.ac.uk/sites/default/files/2020-05/BSG-WP-2020-032-v5.0_0.pdf
 Some comments about McKinsey report:
 
  1. **Temporal correlation between R0 and changing of mobility**: It seems that a mobiity reduction during lockdowns is roughly correlated with reductions in transmission, in general implementation of public health measures leading to reduced mobility (e.g. closure of public spaces, lock downs, closure schools) have successsgully reduced COVID-19 transmission. However, in SOUTH KOREA they implement robust testing and tracing than reducing in mobility, in ITALY large portion of population was infected before lockdown measures were enforced, making trasmission more difficult to control even after lockdown, and in NORWAY the geographical and environmental factors contribute to naturally low rates of spread despite limited control measures. THe seemingly low drop in Rt corresponds to a 40% decrease from baseline. 
