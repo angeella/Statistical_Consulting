@@ -70,7 +70,7 @@ save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/
 
 ##Plus obviously country (id) and date
 
-#Question to analyze!!! <-
+#Some notes:
 #1. icu? number of hospitalized patients in icu 
 #2. vent? Number of patients requiring invasive ventilation on date.
 #3. hosp? Number of hospitalized patients on date.
@@ -78,5 +78,9 @@ save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/
 #5. mkt_volume? Stock market volume.
 #6. health_exp? Current health expenditure (% of GDP).
 #7. health_exp_oop? Out-of-pocket expenditure (% of health expenditure).
-#8. .var1?
-#9. M1_Wildcard? Record policy announcements that do not fit anywhere else <- togli
+#8. M1_Wildcard? Record policy announcements that do not fit anywhere else <- togli
+
+#QUestion:
+#tutte le colonne ripetute .var1?
+
+
