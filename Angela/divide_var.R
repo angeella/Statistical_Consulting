@@ -65,7 +65,7 @@ var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_
 var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical")
 
 
-save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,list = "Angela/Data/var.RData")
+save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
 
 ##Plus obviously country (id) and date
 
