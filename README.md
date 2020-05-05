@@ -19,6 +19,7 @@ Add here some ideas :)
    Data:
     - https://covidtracker.bsg.ox.ac.uk/
     - https://github.com/OxCGRT/covid-policy-tracker/
+    - NEW!!!! https://www.commonwealthfund.org/blog/2020/how-us-compares-other-countries-responding-covid-19-populations-risk-health-system (health and pop variables, only 23 countries)
  5. Mobility Data: https://www.google.com/covid19/mobility/data_documentation.html?hl=en (in data folder)
  6. Updating policies lockdown reference: https://www.imf.org/en/Topics/imf-and-covid19/Policy-Responses-to-COVID-19
 
