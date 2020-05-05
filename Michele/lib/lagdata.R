@@ -1,5 +1,6 @@
 lagdata <- function(dataset, vars=c(), lag=1, save.lag=T, save.var=F, prefix.lag="", suffix.lag=".lag(n)", prefix.var="", suffix.var=".var(n)") {
   require(dplyr)
+  idrecord <- c("id", "state", "date")
   
   if (!any(save.lag, save.var)) {
     stop("nothing to be done")
@@ -18,11 +19,11 @@ lagdata <- function(dataset, vars=c(), lag=1, save.lag=T, save.var=F, prefix.lag
     stop(paste("dataset already contains variables:", paste(intersect(newlag, colnames(dataset)), collapse = ", ")))
   }
   
-  lagged <- dataset[,c("id", "date", vars)]
-  colnames(lagged) <- c("id", "date", newlag)
+  lagged <- dataset[,c(idrecord, vars)]
+  colnames(lagged) <- c(idrecord, newlag)
   lagged$date <- lagged$date + lag # vedi prima
   
-  lagged <- dataset[,c("id", "date")] %>% left_join(lagged, by=c("id", "date"))
+  lagged <- dataset[,idrecord] %>% left_join(lagged, by=idrecord)
   
   if (save.var) {
     prefix.var <- prefix.var %>% gsub(pattern = "\\(n\\)", replacement = lag)
@@ -31,18 +32,18 @@ lagdata <- function(dataset, vars=c(), lag=1, save.lag=T, save.var=F, prefix.lag
     if (any(newvar %in% colnames(dataset))) {
       stop(paste("dataset already contains variables:", paste(intersect(newvar, colnames(dataset)), collapse = ", ")))
     }
-    varied <- dataset[,c("id", "date", vars)]
-    colnames(varied) <- c("id", "date", newvar)
+    varied <- dataset[,c(idrecord, vars)]
+    colnames(varied) <- c(idrecord, newvar)
     varied[,newvar] <- varied[,newvar] - lagged[,newlag]
   }
   
   if (save.lag) {
     writeLines(paste("variables added:", paste(newlag, collapse = ", ")))
-    dataset <- dataset %>% left_join(lagged, by=c("id", "date"))
+    dataset <- dataset %>% left_join(lagged, by=idrecord)
   }
   if (save.var) {
     writeLines(paste("variables added:", paste(newvar, collapse = ", ")))
-    dataset <- dataset %>% left_join(varied, by=c("id", "date"))
+    dataset <- dataset %>% left_join(varied, by=idrecord)
   }
   
   return(dataset)
