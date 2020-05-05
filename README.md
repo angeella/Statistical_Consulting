@@ -5,6 +5,7 @@ Add here some ideas :)
 1. Only confirmed cases from https://github.com/CSSEGISandData/COVID-19/tree/master/who_covid_19_situation_reports;
 2. Hospital bed as variable from OECD (data folder);
 3. Reference lockdown across states: 
+    - https://www.bsg.ox.ac.uk/sites/default/files/2020-05/BSG-WP-2020-032-v5.0_0.pdf
     - https://en.wikipedia.org/wiki/National_responses_to_the_2019%E2%80%9320_coronavirus_pandemic
     - https://www.politico.eu/article/europes-coronavirus-lockdown-measures-compared/
     - https://www.bsg.ox.ac.uk/research/research-projects/coronavirus-government-response-tracker
