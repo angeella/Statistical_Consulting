@@ -51,10 +51,10 @@ var_FIX <- c("state", "pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "p
              "gdp")
 
 var_EC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief", "ox.E3_Fiscal.measures",
-            "ox.E4_International.support")
+            "ox.E4_International.support", "mkt_close", "mkt_volume")
 
 var_HS <- c("information_campaigns", "testing_policy", "contact_tracing","ox.H4_Emergency.investment.in.healthcare",
-           "ox.H5_Investment.in.vaccines")
+           "ox.H5_Investment.in.vaccines", "health_exp", "health_exp_oop")
 
 index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index")
 
@@ -62,7 +62,8 @@ var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_
              "parks_percent_change_from_baseline", "transit_stations_percent_change_from_baseline",
              "workplaces_percent_change_from_baseline", "residential_percent_change_from_baseline")
 
-var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical")
+var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical", "hosp",
+               "vent", "icu")
 
 
 save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
@@ -70,12 +71,12 @@ save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/
 ##Plus obviously country (id) and date
 
 #Question to analyze!!! <-
-#1. icu?
-#2. vent?
-#3. hosp?
-#4. mkt_close?
-#5. mkt_volume?
-#6. health_exp?
-#7. health_exp_oop?
+#1. icu? number of hospitalized patients in icu 
+#2. vent? Number of patients requiring invasive ventilation on date.
+#3. hosp? Number of hospitalized patients on date.
+#4. mkt_close? Stock market price (Close).
+#5. mkt_volume? Stock market volume.
+#6. health_exp? Current health expenditure (% of GDP).
+#7. health_exp_oop? Out-of-pocket expenditure (% of health expenditure).
 #8. .var1?
-#9. M1_Wildcard? Record policy announcements that do not fit anywhere else
+#9. M1_Wildcard? Record policy announcements that do not fit anywhere else <- togli
