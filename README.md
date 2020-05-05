@@ -27,3 +27,8 @@ Some comments about McKinsey report:
 
  1. **Temporal correlation between R0 and changing of mobility**: It seems that a mobiity reduction during lockdowns is roughly correlated with reductions in transmission, in general implementation of public health measures leading to reduced mobility (e.g. closure of public spaces, lock downs, closure schools) have successsgully reduced COVID-19 transmission. However, in SOUTH KOREA they implement robust testing and tracing than reducing in mobility, in ITALY large portion of population was infected before lockdown measures were enforced, making trasmission more difficult to control even after lockdown, and in NORWAY the geographical and environmental factors contribute to naturally low rates of spread despite limited control measures. THe seemingly low drop in Rt corresponds to a 40% decrease from baseline. 
  2. **Plot incremental COVID cases and conducted tests**: Early testing and tracking capacity has enabled some countries to contain incremental cases. Evidence of how the confirmed cases decrease as the countries expandeded to a mass testing approach;
+
+**References Functional Mixed model**:
+ 1. https://www.ece.uvic.ca/~bctill/papers/mocap/Guo_2002.pdf
+ 2. https://www.stat.tamu.edu/~carroll/ftp/2006.papers.directory/rssb_b6165.pdf
+
