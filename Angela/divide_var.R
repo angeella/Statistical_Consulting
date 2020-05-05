@@ -47,7 +47,7 @@ colnames(dat1)
 
 var_LD <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions",
          "transport_closing", "stay_home_restrictions", "internal_movement_restrictions")
-var_FIX <- c("state", "pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
+var_FIX <- c("pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
              "gdp")
 
 var_EC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief", "ox.E3_Fiscal.measures",
