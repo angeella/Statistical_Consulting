@@ -1,56 +1,61 @@
-getmaps <- function() {
+getmaps <- function(lngs=c(-15, 28), lats=c(36, 69.5), want.nations=T, want.regions=F, want.cities=F) {
   require(COVID19)
+  require(ggplot2)
   require(rnaturalearth)
   require(countrycode)
   require(maps)
   require(dplyr)
+  require(tidyr)
   require(stringdist)
   require(sf)
   
-  lngs <- c(-15, 28)
-  lats <- c(36, 69.5)
+  `%notin%` <- Negate(`%in%`)
   
-  map.nazioni <- ne_countries(continent = "Europe", returnclass = "sf")
-  map.nazioni$id.country <- map.nazioni$iso_a3
-  map.nazioni$id.country[map.nazioni$name %>% grepl(pattern = "Kosovo")] <- "RKS"
-  map.nazioni <- map.nazioni[!(map.nazioni$id.country %in% c("BLR", "ISL", "RUS", "UKR")),]
-  map.nazioni <- map.nazioni[(map.nazioni$name != "Moldova"),]
-  map.nazioni <- suppressWarnings(map.nazioni %>% st_crop(xmin=lngs[1], xmax=lngs[2], ymin=lats[1], ymax=lats[2]))
+  map.nazioni <- ne_countries(continent = "Europe", returnclass = "sf") %>%
+    mutate(id=iso_a3 %>% replace_na("RKS")) %>%
+    filter(id %notin% c("BLR", "ISL", "RUS", "UKR")) %>%
+    filter(name != "Moldova") %>%
+    st_crop(xmin=lngs[1], xmax=lngs[2], ymin=lats[1], ymax=lats[2])
   
-  dat <- covid19(ISO = map.nazioni$id.country, level = 1) %>% as.data.frame()
-  dat$id.country <- dat$id %>% sub(pattern = ",.*", replacement = "")
+  datnaz <- covid19(ISO = map.nazioni$id, level = 1) %>%
+    select(id, country) %>% distinct()
   
-  doreg <- c("BEL", "CHE", "GBR", "ITA", "SWE")
+  map.nazioni <- map.nazioni %>%
+    left_join(datnaz, by="id")
+  
+  ggplot() +
+    geom_sf(data = map.nazioni) +
+    geom_sf(data = map.nazioni %>% st_centroid())
+  
+  doreg <- datnaz$id %>%
+    intersect(c("BEL", "CHE", "GBR", "ITA", "SWE"))
+  
   # LVA non e' di interesse, le altre hanno dati regionali solo oltremare
-  datreg <- covid19(ISO = doreg, level = 2) %>% as.data.frame()
-  datreg$id.country <- datreg$id %>% sub(pattern = ",.*", replacement = "")
   
-  # DNK, FRA e NLD hanno solo terre d'oltremare nei dati regionali
-  # LVA e' poco di interesse
-  # datreg$country <- datreg$id.country %>% countrycode(origin = "iso3c", destination = "country.name")
-  # al momento quindi e' in ordine solo il nome della nazione e l'id della nazione
-  doreg <- datreg$id.country %>% unique() %>% countrycode(origin = "iso3c", destination = "iso2c")
-  map.regioni <- ne_states(iso_a2 = doreg, returnclass = "sf")
-  map.regioni$id.country <- map.regioni$admin %>% countrycode(origin = "country.name", destination = "iso3c")
+  datreg <- covid19(ISO = doreg, level = 2) %>%
+    select(id, country, state) %>% distinct() %>%
+    mutate(id.country=id %>% sub(pattern = ",.*", replacement = ""))
+  
+  doreg <- datreg$id.country %>% sub(pattern = ",.*", replacement = "") %>% unique() %>%
+    countrycode(origin = "iso3c", destination = "iso2c")
+  map.regioni <- ne_states(iso_a2 = doreg, returnclass = "sf") %>%
+    mutate(id.country=admin %>% countrycode(origin = "country.name", destination = "iso3c")) %>%
+    left_join(datnaz, by=c("id.country"="id"))
   
   # piccole correzioni per l'Italia che agevolano il matching
   aux <- (map.regioni$id.country=="ITA") & grepl("Trentino", map.regioni$region)
   map.regioni$region[aux] <- paste("P.A.", map.regioni$gns_name[aux])
   
-  # e per il Belgio
-  aux <- (map.regioni$id.country=="BEL")
-  map.regioni$geonunit[aux] <- map.regioni$geonunit[aux] %>% gsub(pattern = "\\s*(Capital|Region)\\s*", replacement = "")
-  
   # e il Regno Unito
   aux <- (map.regioni$id.country=="GBR")
-  map.regioni$region[aux] <- map.regioni$region[aux] %>% sub(pattern = "^Greater\\s*", replacement = "")
+  map.regioni$region[aux] <- map.regioni$region[aux] %>% sub(pattern = ".*London.*", replacement = "London")
   map.regioni$region[aux] <- map.regioni$region[aux] %>% sub(pattern = "^East$", replacement = "East of England")
-  # table(map.regioni$region[map.regioni$id.country=="ITA"])
+  
+  # backup dell'oggetto geometry
   
   geometry.bak <- map.regioni$geometry
-  map.regioni$geometry <- NULL
-  
-  # prima quelli facili
+  map.regioni <- map.regioni %>%
+    st_set_geometry(NULL)
   
   match <- matrix(
     c("BEL", "geonunit",
@@ -61,6 +66,7 @@ getmaps <- function() {
   byrow = T, ncol = 2)
   
   map.regioni$state <- ""
+  repl.all <- c()
   for (i in 1:nrow(match)) {
     cntry <- match[i,1]
     varmatch <- match[i,2]
@@ -77,50 +83,83 @@ getmaps <- function() {
     
     writeLines(paste0("\t", reg.missin, " <-> ", reg.matche))
     
+    prev <- names(repl.all)
     repl <- reg.missin
+    repl.all <- c(repl.all, reg.missin)
     names(repl) <- reg.matche
+    names(repl.all) <- c(prev, reg.matche)
     
     map.regioni$state[aux] <- map.regioni$state[aux] %>% recode(!!!repl)
   }
   
-  map.regioni <- map.regioni %>% mutate(geometry = geometry.bak) %>% st_as_sf()
+  map.regioni <- map.regioni %>%
+    select(id.country, country, state) %>%
+    st_set_geometry(geometry.bak) %>%
+    left_join(datreg, by=c("id.country", "country", "state")) %>%
+    mutate(id=ifelse(is.na(id), paste0(id.country, ", rest"), id)) %>%
+    group_by(id, country) %>%
+    summarise(state=paste(state %>% unique() %>% sort(), collapse = "+"))
   
-  map.regioni <- map.regioni %>% group_by(id.country, state) %>% summarise()
+  map.regioni$id.country <- NULL
   
-  for (cntry in unique(map.regioni$id.country)) {
-    aux <- map.regioni$id.country==cntry
-    tomerge <- map.regioni$state[aux] %>% unique() %>% setdiff(datreg$state[datreg$id.country==cntry])
-    repl <- rep(paste("Rest of", cntry), length(tomerge))
-    names(repl) <- tomerge
-    if (length(tomerge) > 0) {
-      map.regioni$state[aux] <- map.regioni$state[aux] %>% recode(!!!repl)
-    }
-  }
+  map.regioni %>%
+    ggplot() +
+    geom_sf(aes(fill=grepl("rest", id)))
   
-  map.regioni <- map.regioni %>% group_by(id.country, state) %>% summarise()
-  map.regioni$regional <- T
-  map.regioni$national <- F
-  map.regioni$finest <- T
+  map.nazioni <- ne_states(iso_a2 = map.nazioni$iso_a2[map.nazioni$name!="Kosovo"], returnclass = "sf") %>%
+    rbind(ne_states(country = "Kosovo", returnclass = "sf")) %>%
+    st_crop(xmin=lngs[1], xmax=lngs[2], ymin=lats[1], ymax=lats[2]) %>%
+    mutate(id=admin %>% countrycode(origin = "country.name", destination = "iso3c", warn=F)) %>%
+    mutate(id=id %>% replace_na("RKS")) %>%
+    group_by(id) %>% summarise() %>% left_join(datnaz, by="id")
   
-  # begin mod
+  datcit <- covid19(ISO="ITA", level=3) %>%
+    select(id, country, state, city) %>%
+    distinct()
   
-  map.nazioni <- ne_states(iso_a2 = map.nazioni$iso_a2[map.nazioni$name!="Kosovo"], returnclass = "sf")
-  map.nazioni <- ne_states(country = "Kosovo", returnclass = "sf") %>% rbind(map.nazioni)
-  map.nazioni <- suppressWarnings(map.nazioni %>% st_crop(xmin=lngs[1], xmax=lngs[2], ymin=lats[1], ymax=lats[2]))
-  map.nazioni$id.country <- map.nazioni$admin %>% countrycode(origin = "country.name", destination = "iso3c", warn = F)
-  map.nazioni$id.country[map.nazioni$geonunit=="Kosovo"] <- "RKS"
-  if (any(map.nazioni$id.country %>% is.na())) stop("missing countries")
-  map.nazioni <- map.nazioni %>% group_by(id.country) %>% summarise()
-  # end mod
+  map.citta <- ne_states(country = "Italy", returnclass = "sf") %>%
+    mutate(id=iso_3166_2 %>% sub(pattern = "-", replacement = "A, ")) %>%
+    left_join(datcit, by="id") %>%
+    mutate(
+      id=ifelse(is.na(city), "ITA, rest", id),
+      country=country %>% replace_na("Italy"),
+      state=state %>% replace_na("Sardegna"),
+      city=ifelse(is.na(city), gn_name %>% sub(pattern = "Provincia di ", replacement = ""), city)
+    ) %>% group_by(id, country, state) %>% summarise(city=city %>% unique() %>% paste(collapse = "+"))
   
+  map.nazioni <- map.nazioni %>% mutate(
+    state=as.character(NA),
+    city=as.character(NA),
+    civic=F,
+    regional=F,
+    national=T,
+    finest=((country %notin% map.regioni$country) | !want.regions) & ((country %notin% map.citta$country) | !want.cities)
+  ) %>% as_tibble()
   
+  map.regioni <- map.regioni %>% mutate(
+    city=as.character(NA),
+    civic=F,
+    regional=T,
+    national=F,
+    finest=(country %notin% map.citta$country) | !want.cities
+  ) %>% as_tibble()
   
-  map.nazioni$state <- NA
-  map.nazioni$regional <- F
-  map.nazioni$national <- T
-  map.nazioni$finest <- !(map.nazioni$id.country %in% map.regioni$id.country)
+  map.citta <- map.citta %>% mutate(
+    civic=T,
+    regional=F,
+    national=F,
+    finest=T
+  ) %>% as_tibble()
   
-  map.nazioni <- map.nazioni[,colnames(map.regioni)]
-  
-  rbind(map.regioni, map.nazioni)
+  bind_rows(map.nazioni, if (want.regions) map.regioni, if (want.cities) map.citta) %>%
+    st_as_sf() %>%
+    mutate(is.bin=grepl(", rest", id)) %>%
+    select(id, national, regional, civic, finest, is.bin)
 }
+
+# mapdata <- getmaps(want.nations = T, want.regions = T, want.cities = T)
+# save(mapdata, file="Michele/lib/maps/civic.RData")
+# mapdata <- getmaps(want.nations = T, want.regions = T, want.cities = F)
+# save(mapdata, file="Michele/lib/maps/regio.RData")
+# mapdata <- getmaps(want.nations = T, want.regions = F, want.cities = F)
+# save(mapdata, file="Michele/lib/maps/natio.RData")

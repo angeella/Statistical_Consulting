@@ -1,27 +1,55 @@
 
-source("Michele/lib/maps.R")
+require(COVID19)
+require(dplyr)
+require(ggplot2)
+require(tidyr)
+require(rlist)
+load("Michele/lib/maps/regio.RData")
 source("Michele/lib/lagdata.R")
 source("Michele/lib/long2wide.R")
-require(ggplot2)
 
-mapdata <- getmaps()
-mapdata$is.bin <- grepl("^Rest of", mapdata$state)
-mapdata[mapdata$national,] %>% ggplot() + geom_sf(aes(fill=id.country)) + theme(legend.position = "none")
-mapdata[mapdata$regional,] %>% ggplot() + geom_sf(aes(fill=is.bin))
-mapdata[mapdata$finest,] %>% ggplot() + geom_sf(aes(fill=regional, lty = regional))
+mapdata %>% filter(finest) %>% ggplot() + geom_sf(aes(fill=paste(national, regional, civic, is.bin)))
 
 dat <- bind_rows(
-  covid19(ISO = mapdata$id.country[mapdata$national], level = 1),
-  covid19(ISO = mapdata$id.country[mapdata$regional], level = 2)
+  covid19(ISO = mapdata$id[mapdata$national], level = 1)
+  ,covid19(ISO = mapdata$id[mapdata$regional] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 2)
+  # ,covid19(ISO = mapdata$id[mapdata$civic] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 3)
 ) %>% as.data.frame()
 
+mapdata %>%
+  filter(civic) %>%
+  left_join(dat %>% filter(date==Sys.Date()-1), by="id") %>%
+  ggplot() + geom_sf(aes(fill=hosp/confirmed))
+
+dat %>%
+  filter(!is.na(city)) %>% summary()
+
 dat$id.country <- dat$id %>% sub(pattern = ",.*", replacement = "")
+dat$label <- dat[,c("id.country", "state")] %>% apply(1, function(v) v %>% na.omit() %>% paste(collapse = "-")) 
+dat <- dat %>% arrange(country, state, city, date)
 
-dat <- c("confirmed", "recovered", "deaths", "stringency_index") %>%
-  lagdata(dataset = dat, save.var = T, save.lag = F)
+dat %>% filter((state=="Sardegna") & (country=="Italy") & (date==Sys.Date()-1))
 
-dat <- dat %>% group_by(id.country, state) %>% arrange(id.country, state, date) %>%
-  mutate(stringency_index_smooth=loess(stringency_index ~ as.numeric(date)) %>% predict())
+# calcolo variazioni di S, I, R e index
+aux <- c("confirmed", "recovered", "deaths", "stringency_index")
+dat <- aux %>% lagdata(dataset = dat, save.lag = T, save.var = F)
+# mi limito a imputare il dato iniziale a zero
+dat <- dat %>% replace_na(aux %>% paste0(".lag1") %>% sapply(function(v) 0) %>% as.list())
+# qui calcolo effettivamente le variazioni
+dat <- aux %>% lagdata(dataset = dat, save.lag = F, save.var = T)
+
+all(dat$stringency_index.var1 == dat %>% group_by(id.country, state) %>% mutate(stringency_index.lag1alt=lag(stringency_index, 1) %>% replace_na(0)) %>% mutate(stringency_index.var1alt=stringency_index-stringency_index.lag1alt) %>% ungroup() %>% select("stringency_index.var1alt") %>% as.data.frame() %>% as.matrix() %>% as.vector())
+
+# smusso la serie storica degli index, i dati sono già ordinati
+dat <- dat %>% group_by(id.country, state) %>%
+  mutate(stringency_index_smooth=loess(stringency_index ~ as.numeric(date)) %>% predict()) %>% as.data.frame()
+
+# calcolo i casi attivi
+dat <- dat %>% group_by(id.country, state) %>%
+  mutate(cases.active=cumsum(confirmed.var1-deaths.var1-recovered.var1)) %>%
+  mutate(cases.active_smooth=loess(cases.active ~ as.numeric(date)) %>% predict()) %>% as.data.frame()
+
+
 
 dat2 <- dat %>% filter(is.na(state)) %>% long2wide(id = "id.country", time = "date", vars = "stringency_index_smooth")
 rownames(dat2) <- dat2$id.country

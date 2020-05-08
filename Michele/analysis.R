@@ -16,11 +16,15 @@ require(rnaturalearthdata)
 
 # librerie
 source("Michele/lib/long2wide.R") # per convertire il dataset default dal long al wide format
-source("Michele/lib/merger.R", encoding="unknown") # per fare il join con altri dataset
+source("Michele/lib/merger.R") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 source("Michele/lib/lagdata.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
-
 dat <- COVID19::covid19(level=1) %>% as.data.frame()
+
+datita <- COVID19::covid19(ISO="ITA", level=2) %>% as.data.frame()
+
+lagdata(dat, vars=c("confirmed"))
+
 
 cumul <- c("deaths", "confirmed", "tests", "recovered")
 instant <- c("hosp", "icu", "vent")
@@ -32,7 +36,17 @@ time <- "date"
 
 dat <- merger(dat)
 
-dat <- dat %>% lagdata(vars=c(cumul, policies, index), lag = 1, save.lag = F, save.var = T)
+dat <- dat %>% lagdata(vars=cumul, lag = 10, save.lag = T, save.var = F)
+dat <- dat %>% lagdata(vars=c(policies, index), lag = 1, save.lag = F, save.var = T)
+
+devtools::install_github("cran/gsg")
+require(gsg)
+
+glm(paste0("confirmed.var1 ~ log(pop) + id + ", paste(policies, collapse = " + ")) %>% as.formula(), data=dat[(dat$pop > 1e7) & (dat$confirmed.var1 >= 0),], family = poisson())
+
+ggplot(dat[dat$pop > 1e7,]) +
+  geom_smooth(aes(x=date, group=id, color=id, y=new.active/pop), se=F, size=0.5, method="gam") +
+  theme(legend.position = "none")
 
 # all(dat$confirmed.diff + dat$recovered + dat$deaths >= 0)
 head(dat)
