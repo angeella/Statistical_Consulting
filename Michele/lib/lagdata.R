@@ -1,6 +1,6 @@
 lagdata <- function(dataset, vars=c(), lag=1, save.lag=T, save.var=F, prefix.lag="", suffix.lag=".lag(n)", prefix.var="", suffix.var=".var(n)") {
   require(dplyr)
-  idrecord <- "id"
+  idrecord <- c("id", "date")
   
   if (!any(save.lag, save.var)) {
     stop("nothing to be done")

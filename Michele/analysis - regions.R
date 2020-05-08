@@ -3,7 +3,7 @@ require(COVID19)
 require(dplyr)
 require(ggplot2)
 require(tidyr)
-require(rlist)
+require(sf)
 load("Michele/lib/maps/regio.RData")
 source("Michele/lib/lagdata.R")
 source("Michele/lib/long2wide.R")
@@ -14,22 +14,62 @@ dat <- bind_rows(
   covid19(ISO = mapdata$id[mapdata$national], level = 1)
   ,covid19(ISO = mapdata$id[mapdata$regional] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 2)
   # ,covid19(ISO = mapdata$id[mapdata$civic] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 3)
-) %>% as.data.frame()
+) %>% as.data.frame() %>%
+  mutate(national=is.na(state), regional=!is.na(state)) %>%
+  arrange(id, date)
 
-mapdata %>%
-  filter(civic) %>%
-  left_join(dat %>% filter(date==Sys.Date()-1), by="id") %>%
-  ggplot() + geom_sf(aes(fill=hosp/confirmed))
+sma <- function(y, k) {
+  if (k <= 1) {
+    (y + lag(y, 1))/2
+  } else {
+    sma(sma(y, k - 1), 1)
+  }
+}
 
-dat %>%
-  filter(!is.na(city)) %>% summary()
+sapply(colnames(dat)[grepl("(closin|cancel|restric|campai|polic|trac|index)", colnames(dat))], function(pol) {
+  print(dat %>% filter(T) %>% ggplot() +
+          geom_tile(aes_string(x="date", y="id", fill=pol)) +
+          ggtitle(pol))
+})
 
-dat$id.country <- dat$id %>% sub(pattern = ",.*", replacement = "")
-dat$label <- dat[,c("id.country", "state")] %>% apply(1, function(v) v %>% na.omit() %>% paste(collapse = "-")) 
-dat <- dat %>% arrange(country, state, city, date)
+cl <- dat %>% filter(national) %>% long2wide(id="id", time="date", vars="stringency_index")
+rownames(cl) <- cl$id
+cl$id <- NULL
+cl <- cl %>% dist() %>% hclust(method = "complete")
+cl <- list(order=cl$labels[cl$order])
+cl$todo <- dat$id %>% unique()
 
-dat %>% filter((state=="Sardegna") & (country=="Italy") & (date==Sys.Date()-1))
+dat$id <- dat$id %>% factor(levels=sapply(cl$order, function(v) {
+  cl$todo[grepl(v, cl$todo)]
+}) %>% unlist() %>% as.vector())
 
+sapply(colnames(dat)[grepl("(closin|cancel|restric|campai|polic|trac|index)", colnames(dat))], function(pol) {
+  print(dat %>% filter(T) %>% ggplot() +
+          geom_tile(aes_string(x="date", y="id", fill=pol)) +
+          ggtitle(pol))
+})
+
+dat %>% ggplot() + geom_path(aes(y=id, x=date, color=regional))
+
+dat %>% filter(T) %>% ggplot() +
+  geom_tile(aes(x=date, y=id, fill=tests>0))
+
+dat %>% filter(national & ((tests > 0) | (confirmed > 0))) %>%
+  group_by(id) %>% mutate(
+    conf=sma(log(1+confirmed), 5),
+    reco=sma(log(1+recovered), 5),
+    deaf=sma(log(1+deaths), 5)
+  ) %>%
+  ggplot() +
+  geom_path(aes(x=date, y=conf, group=id), color="blue") +
+  geom_path(aes(x=date, y=reco, group=id), color="green") +
+  geom_path(aes(x=date, y=deaf, group=id), color="red")
+
+dat %>% filter(national) %>% ggplot() + geom_path(aes(x=date, y=log(1+mkt_close), group=id))
+dat %>% filter(national) %>% ggplot() + geom_path(aes(x=date, y=log(1+mkt_volume), group=id))
+
+dat %>% lagdata("stringency_index") filter(national) %>% ggplot() +
+  geom_path(aes(x=date, y=stringency_index, group=id))
 # calcolo variazioni di S, I, R e index
 aux <- c("confirmed", "recovered", "deaths", "stringency_index")
 dat <- aux %>% lagdata(dataset = dat, save.lag = T, save.var = F)
