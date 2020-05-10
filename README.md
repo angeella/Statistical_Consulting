@@ -42,4 +42,6 @@ Some comments about McKinsey report:
  
  **Estimate R0**:
  1. https://timchurches.github.io/blog/posts/2020-02-18-analysing-covid-19-2019-ncov-outbreak-data-with-r-part-1/#estimating-changes-in-the-effective-reproduction-number
+ 2. https://www.sciencedirect.com/science/article/pii/S1201971220301193
+ 
  
