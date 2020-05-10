@@ -36,3 +36,7 @@ Some comments about McKinsey report:
 **References contact lockdown**:
  1. https://www.ecdc.europa.eu/sites/default/files/documents/Contact-tracing-Public-health-management-persons-including-healthcare-workers-having-had-contact-with-COVID-19-cases-in-the-European-Union%E2%80%93second-update_0.pdf
  2. https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-use-face-masks-community.pdf
+ 
+ **References Italian Region**:
+ 1. https://www.imperial.ac.uk/media/imperial-college/medicine/mrc-gida/2020-05-04-COVID19-Report-20-Italian.pdf
+ 
