@@ -43,5 +43,9 @@ Some comments about McKinsey report:
  **Estimate R0**:
  1. https://timchurches.github.io/blog/posts/2020-02-18-analysing-covid-19-2019-ncov-outbreak-data-with-r-part-1/#estimating-changes-in-the-effective-reproduction-number
  2. https://www.sciencedirect.com/science/article/pii/S1201971220301193
- 
- 
+ 3. https://github.com/annecori/EpiEstim/blob/master/vignettes/demo.Rmd
+ 4. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3816335/
+ 5. https://github.com/timchurches/blog/blob/master/_posts/2020-03-01-analysing-covid-19-2019-ncov-outbreak-data-with-r-part-2/analysing-covid-19-2019-ncov-outbreak-data-with-r-part-2.Rmd
+ 6. https://timchurches.github.io/blog/posts/2020-03-01-analysing-covid-19-2019-ncov-outbreak-data-with-r-part-2/#modelling-epidemic-trajectory-in-hubei-province-using-log-linear-models
+ 7.https://rviews.rstudio.com/2020/03/05/covid-19-epidemiology-with-r/
+ 8. https://cmmid.github.io/topics/covid19/global-time-varying-transmission.html
