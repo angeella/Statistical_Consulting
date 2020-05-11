@@ -6,7 +6,7 @@ smoothing=function(data){
   optbasis=optim.basis(ncfund, #cerca il numero di basi ottime via cross-validation
                        type.CV = GCV.S,
                        lambda = 0,
-                       numbasis = floor(seq(ncol(ncfund)/16, ncol(ncfund)/2, len = 10)),
+                       numbasis = floor(seq(ncol(ncfund)/10, ncol(ncfund)/2, len = 10)),
                        type.basis = "bspline")$numbasis.opt
   
   p=dim(data)[2]-1
@@ -17,6 +17,6 @@ smoothing=function(data){
   plot(smoothedata)
   return(smoothedata)
 }
+data=resdat$confirmed
 
-smoothing(resdat$deaths)
 

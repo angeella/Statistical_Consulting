@@ -6,8 +6,6 @@ require(ISOcodes)
 require(stringr)
 require(stringi)
 require(stringdist)
-
-
 require(maps)
 require(rnaturalearth)
 require(rnaturalearthdata)
@@ -16,7 +14,7 @@ require(rnaturalearthdata)
 source("Michele/lib/long2wide.R") # per convertire il dataset default dal long al wide format
 source("Michele/lib/merger.R") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
-
+source("Angela/Compute_R0.R")
 
 dat <- #list(countries=
   COVID19::covid19(level=1,
