@@ -3,6 +3,7 @@ library(amap)
 library(ggplot2)
 library(lme4)
 library(multcomp)
+library(lme4)
 #load variables set
 load("Angela/Data/var.RData")
 
@@ -26,7 +27,7 @@ var_Num <- c("ox.E3_Fiscal.measures","ox.E4_International.support", "mkt_close",
 
 d1 <- dist(scale(dataC[,c(1:33)]), method = "euclidean") 
 
-H.fit <- hclust(d1, method="ward")
+H.fit <- hclust(d1, method="ward.D")
 #plot(H.fit)
 groups <- cutree(H.fit, k=4) # cut tree into 4 clusters
 out <- cbind(groups, dataC$id)
@@ -52,13 +53,13 @@ dim(dataC)
 dim(dataC_filter)
 
 dat <- add_R0(dataset = dataC_filter)
-library(lme4)
+
 dat[,var_Ord] <- lapply(dat[,var_Ord], function(x) as.factor(x))
 f <- as.formula(paste("R0mean", "~", paste(c(var_EC), collapse=" + "), 
                       "+", paste(c(var_FIX), collapse=" + "),
                       "+", paste(c(var_HS), collapse=" + "),
                       "+", paste(c(var_LD), collapse=" + "),
-                      "+ (1|id) + (date|CLUSTER)"))
+                      "+ (date|CLUSTER/id)"))
 model <- lmer(f, data = dat)
 tmp <- as.data.frame(confint(glht(model, mcp(stay_home_restrictions = "Tukey")))$confint)
 tmp$Comparison <- rownames(tmp)
@@ -86,4 +87,10 @@ ggplot(dat,aes(x=stay_home_restrictions))+geom_bar()+facet_grid(~CLUSTER)+theme_
 ggplot(dat,aes(x=gatherings_restrictions))+geom_bar()+facet_grid(~CLUSTER)+theme_bw() 
 
 
+dat1 <- dat %>% filter(id %in% c("BRA","USA", "BEL", "NLD", "SWE", "FIN", "ITA",
+                                 "ESP", "GBR","FRA"))
+
+dat1 %>%
+  ggplot() +
+  geom_tile(aes(x=date, y=id, fill=log(R0mean)))
 
