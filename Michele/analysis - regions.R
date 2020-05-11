@@ -7,8 +7,23 @@ require(sf)
 load("Michele/lib/maps/regio.RData")
 source("Michele/lib/lagdata.R")
 source("Michele/lib/long2wide.R")
+source("Michele/lib/oxford.R")
+source("Michele/lib/policies.R")
+source("Michele/lib/csse.R")
+source("Michele/lib/mobility.R")
 
-mapdata %>% filter(finest) %>% ggplot() + geom_sf(aes(fill=paste(national, regional, civic, is.bin)))
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")[-1]
+
+mapdata <- mapdata %>%
+  mutate(tipo=ifelse(is.bin, "raccoglitori", ifelse(civic, "province", ifelse(regional, "regioni", "stati"))))
+
+png("Michele/plots/mappaall.png", width = 20, height = 15, units = "cm", res=200)
+mapdata %>%
+  filter(finest) %>%
+  ggplot() +
+  geom_sf(aes(fill=tipo), lwd=0.5, color="black") +
+  scale_fill_manual(values=cbPalette)
+dev.off()
 
 dat <- bind_rows(
   covid19(ISO = mapdata$id[mapdata$national], level = 1)
@@ -16,7 +31,87 @@ dat <- bind_rows(
   # ,covid19(ISO = mapdata$id[mapdata$civic] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 3)
 ) %>% as.data.frame() %>%
   mutate(national=is.na(state), regional=!is.na(state)) %>%
-  arrange(id, date)
+  arrange(id, date) %>%
+  oxford() %>%
+  csse() %>%
+  mobility()
+
+dat <- dat %>%
+  mutate(
+    active=confirmed - deaths - recovered,
+    ox.active=ox.confirmed - ox.deaths - ox.recovered
+  )
+
+dat %>%
+  filter(abs(active-ox.active) > 0.1*pmax(abs(active), abs(ox.active))) %>%
+  ggplot() +
+  geom_point(aes(
+    x=active,
+    y=ox.active,
+    color=country
+  )) +
+  geom_abline(intercept = 0, slope = 1)
+
+for (p in policies) {
+  dat[[p]] <- dat[[p]] %>% ordered(levels=policies.levels[[p]] %>% names())
+}
+
+dat$stringency_index.res <-
+  dat[,c("stringency_index", policies)] %>%
+  glm(formula = stringency_index/100 ~ ., family = quasibinomial(link = "probit")) %>%
+  fitted()
+dat <- dat %>% mutate(stringency_index.res=stringency_index - 100*stringency_index.res)
+
+dat %>% filter(national) %>%
+  ggplot() +
+  geom_boxplot(aes(x=stringency_index.res, y=id))
+
+dat %>% filter(national) %>% ggplot() + geom_tile(aes(x=date, y=id, fill=C1_School.closing %>% ordered())) + ggtitle("Oxford data")# + theme(legend.position = "none")
+
+png("Michele/plots/scuole.png", width = 20, height = 15, units = "cm", res=200)
+dat %>%
+  filter(national) %>%
+  ggplot() +
+  geom_tile(aes(x=date, y=country, fill=school_closing)) +
+  # ggtitle("COVID19 R Package") + # + theme(legend.position = "none")
+  scale_fill_manual(values=c("#2dc937", "#e7b416", "#db7b2b", "#cc3232")) +
+  scale_x_date(date_labels = "%b %d") +
+  xlab("") + ylab("") +
+  theme(legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.ticks.y.left = element_blank(), axis.text = element_text(size=10)) +
+  ggtitle("")
+dev.off()
+
+# dat %>% filter(national) %>% left_join(mapdata, by="id") %>%
+#   st_as_sf() %>%
+#   ggplot(cex=0.5) +
+#   facet_wrap(~ date) +
+#   geom_sf(aes(fill=stringency_index), lwd=0)
+
+dat <- dat %>% mutate(cases.active=confirmed-deaths-recovered)
+
+dat %>% filter(cases.active<0) %>% select(id, cases.active) %>% distinct()
+
+dat <- dat %>% left_join(
+  dat %>% filter(regional) %>% group_by(country, date) %>%
+    summarise(
+      cases.active.reg=sum(cases.active, na.rm = T),
+      state=as.character(NA), city=as.character(NA)
+    ),
+  by=c("country", "state", "city", "date")
+)
+
+sapply(policies, function(pol) {
+  print(
+    dat %>% filter(regional & (country=="Italy")) %>%
+      ggplot() +
+      geom_tile(aes_string(x="date", y="id", fill=pol)) +
+      ggtitle(pol)
+  )
+})
+
+dat %>% filter(!is.na(cases.active.reg)) %>% ggplot() +
+  geom_path(aes(group=id, x=cases.active, y=cases.active.reg, color=country))
 
 sma <- function(y, k) {
   if (k <= 1) {
@@ -26,7 +121,7 @@ sma <- function(y, k) {
   }
 }
 
-sapply(colnames(dat)[grepl("(closin|cancel|restric|campai|polic|trac|index)", colnames(dat))], function(pol) {
+sapply(policies, function(pol) {
   print(dat %>% filter(T) %>% ggplot() +
           geom_tile(aes_string(x="date", y="id", fill=pol)) +
           ggtitle(pol))
@@ -43,7 +138,7 @@ dat$id <- dat$id %>% factor(levels=sapply(cl$order, function(v) {
   cl$todo[grepl(v, cl$todo)]
 }) %>% unlist() %>% as.vector())
 
-sapply(colnames(dat)[grepl("(closin|cancel|restric|campai|polic|trac|index)", colnames(dat))], function(pol) {
+sapply(policies, function(pol) {
   print(dat %>% filter(T) %>% ggplot() +
           geom_tile(aes_string(x="date", y="id", fill=pol)) +
           ggtitle(pol))
@@ -68,8 +163,12 @@ dat %>% filter(national & ((tests > 0) | (confirmed > 0))) %>%
 dat %>% filter(national) %>% ggplot() + geom_path(aes(x=date, y=log(1+mkt_close), group=id))
 dat %>% filter(national) %>% ggplot() + geom_path(aes(x=date, y=log(1+mkt_volume), group=id))
 
-dat %>% lagdata("stringency_index") filter(national) %>% ggplot() +
-  geom_path(aes(x=date, y=stringency_index, group=id))
+dat %>% filter(national) %>% ggplot() +
+  geom_tile(aes(x=date, y=id, fill=stringency_index)) +
+  scale_fill_gradient(low="green", high="salmon")
+
+dat %>% filter(regional)
+
 # calcolo variazioni di S, I, R e index
 aux <- c("confirmed", "recovered", "deaths", "stringency_index")
 dat <- aux %>% lagdata(dataset = dat, save.lag = T, save.var = F)
