@@ -175,32 +175,35 @@ for (j in 1:dim(pol)[3]){
 #senza var eco e san
 require(funLBM)
 ciao=funLBM(pol2[,-c(4:7),], K=2:3, L=2)
-clust=data.frame(id=ISO[-5], cluster=ciao$row_clust)
-ciao$col_clust # chiaramente restrictions e tracing + testing sono diverse
+
+#clustering_da_salvare=ciao
+
+clust=data.frame(id=ISO[-5], cluster=clustering_da_salvare$row_clust)
+clustering_da_salvare$col_clust # chiaramente restrictions e tracing + testing sono diverse
 
 uno=clust[clust$cluster==1,]$id
 due=clust[clust$cluster==2,]$id
 tre=clust[clust$cluster==3,]$id
-#quattro=clust[clust$cluster==4,]$id
+quattro=clust[clust$cluster==4,]$id
 #clust[clust$cluster==5,]$id
 #clust[clust$cluster==6,]$id
 
-#clustering_da_salvare=ciao
 
-par(mfrow=c(1,3)) #poche restrizioni personali, no tracing eccetto per SWE, no testing eccetto per USA
-plot(fdata(as.matrix(rs[rs$id %in% uno,-1])), main="Restrictions")
-plot(fdata(as.matrix(tracing[tracing$id %in% uno,-1])), main="Tracing")
-plot(fdata(as.matrix(test[test$id %in% uno,-1])), main="Testing")
 
-par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), no testing, very discontinuos tracing
-plot(fdata(as.matrix(rs[rs$id %in% due,-1])), main="Restrictions")
-plot(fdata(as.matrix(tracing[tracing$id %in% due,-1])), main="Tracing")
-plot(fdata(as.matrix(test[test$id %in% due,-1])), main="Testing")
+par(mfrow=c(1,3)) #poche restrizioni personali, no tracing eccetto per SWE,  del testing nella seconda parte
+plot(fdata(as.matrix(rs[rs$id %in% uno,-1])), main="Restrictions", ylim=c(-2,3.5))
+plot(fdata(as.matrix(tracing[tracing$id %in% uno,-1])), main="Tracing", ylim=c(-2,3.5))
+plot(fdata(as.matrix(test[test$id %in% uno,-1])), main="Testing", ylim=c(-2,3.5))
+
+par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), testing peak in the middle of the crisis
+plot(fdata(as.matrix(rs[rs$id %in% due,-1])), main="Restrictions", ylim=c(-2,3.5))
+plot(fdata(as.matrix(tracing[tracing$id %in% due,-1])), main="Tracing", ylim=c(-2,3.5))
+plot(fdata(as.matrix(test[test$id %in% due,-1])), main="Testing", ylim=c(-2,3.5))
 
 par(mfrow=c(1,3)) #testing molto elevato, tracing only in the first fase
-plot(fdata(as.matrix(rs[rs$id %in% tre,-1])), main="Restrictions")
-plot(fdata(as.matrix(tracing[tracing$id %in% tre,-1])), main="Tracing")
-plot(fdata(as.matrix(test[test$id %in% tre,-1])), main="Testing")
+plot(fdata(as.matrix(rs[rs$id %in% tre,-1])), main="Restrictions", ylim=c(-2,3.5))
+plot(fdata(as.matrix(tracing[tracing$id %in% tre,-1])), main="Tracing", ylim=c(-2,3.5))
+plot(fdata(as.matrix(test[test$id %in% tre,-1])), main="Testing", ylim=c(-2,3.5))
 
 par(mfrow=c(1,3)) # restr+test no tracing
 plot(fdata(as.matrix(rs[rs$id %in% quattro,-1])), main="Restrictions")
@@ -241,34 +244,34 @@ res@zc
 res@zr
 clust=data.frame(id=ISO[-5], cluster=res@zr)
 
-uno=clust[clust$cluster==1,]$id
-due=clust[clust$cluster==2,]$id
-tre=clust[clust$cluster==3,]$id
+un=clust[clust$cluster==1,]$id
+dos=clust[clust$cluster==2,]$id
+tres=clust[clust$cluster==3,]$id
 
 par(mfrow=c(2,3)) #poche restrizioni personali, no tracing eccetto per SWE, no testing eccetto per USA
-plot(fdata(as.matrix(rs[rs$id %in% uno,-1])), main="Restrictions", ylim=c(-2,4))
-plot(fdata(as.matrix(tracing[tracing$id %in% uno,-1])), main="Tracing", ylim=c(-2,4))
-plot(fdata(as.matrix(test[test$id %in% uno,-1])), main="Testing", ylim=c(-2,4))
-plot(fdata(as.matrix(fiscalm[test$id %in% uno,])), main="FiscalM")
-plot(fdata(as.matrix(invax[test$id %in% uno,])), main="InVax")
-plot(fdata(as.matrix(invhealth[test$id %in% uno,])), main="InvHealth")
+plot(fdata(as.matrix(rs[rs$id %in% un,-1])), main="Restrictions", ylim=c(-2,4))
+plot(fdata(as.matrix(tracing[tracing$id %in% un,-1])), main="Tracing", ylim=c(-2,4))
+plot(fdata(as.matrix(test[test$id %in% un,-1])), main="Testing", ylim=c(-2,4))
+plot(fdata(as.matrix(fiscalm[test$id %in% un,])), main="FiscalM")
+plot(fdata(as.matrix(invax[test$id %in% un,])), main="InVax")
+plot(fdata(as.matrix(invhealth[test$id %in% un,])), main="InvHealth")
 
 
 par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), no testing, very discontinuos tracing
-plot(fdata(as.matrix(rs[rs$id %in% due,-1])), main="Restrictions", ylim=c(-2,4))
-plot(fdata(as.matrix(tracing[tracing$id %in% due,-1])), main="Tracing", ylim=c(-2,4))
-plot(fdata(as.matrix(test[test$id %in% due,-1])), main="Testing", ylim=c(-2,4))
-plot(fdata(as.matrix(fiscalm[test$id %in% due,])), main="FiscalM")
-plot(fdata(as.matrix(invax[test$id %in% due,])), main="InVax")
-plot(fdata(as.matrix(invhealth[test$id %in% due,])), main="InvHealth")
+plot(fdata(as.matrix(rs[rs$id %in% dos,-1])), main="Restrictions", ylim=c(-2,4))
+plot(fdata(as.matrix(tracing[tracing$id %in% dos,-1])), main="Tracing", ylim=c(-2,4))
+plot(fdata(as.matrix(test[test$id %in% dos,-1])), main="Testing", ylim=c(-2,4))
+plot(fdata(as.matrix(fiscalm[test$id %in% dos,])), main="FiscalM")
+plot(fdata(as.matrix(invax[test$id %in% dos,])), main="InVax")
+plot(fdata(as.matrix(invhealth[test$id %in% dos,])), main="InvHealth")
 
 par(mfrow=c(1,3)) #testing molto elevato, tracing only in the first fase
-plot(fdata(as.matrix(rs[rs$id %in% tre,-1])), main="Restrictions", ylim=c(-2,4))
-plot(fdata(as.matrix(tracing[tracing$id %in% tre,-1])), main="Tracing", ylim=c(-2,4))
-plot(fdata(as.matrix(test[test$id %in% tre,-1])), main="Testing", ylim=c(-2,4))
-plot(fdata(as.matrix(fiscalm[test$id %in% tre,])), main="FiscalM")
-plot(fdata(as.matrix(invax[test$id %in% tre,])), main="InVax")
-plot(fdata(as.matrix(invhealth[test$id %in% tre,])), main="InvHealth")
+plot(fdata(as.matrix(rs[rs$id %in% tres,-1])), main="Restrictions", ylim=c(-2,4))
+plot(fdata(as.matrix(tracing[tracing$id %in% tres,-1])), main="Tracing", ylim=c(-2,4))
+plot(fdata(as.matrix(test[test$id %in% tres,-1])), main="Testing", ylim=c(-2,4))
+plot(fdata(as.matrix(fiscalm[test$id %in% tres,])), main="FiscalM")
+plot(fdata(as.matrix(invax[test$id %in% tres,])), main="InVax")
+plot(fdata(as.matrix(invhealth[test$id %in% tres,])), main="InvHealth")
 
 require(pracma)
 movavg(ciao, 3, type="s")
