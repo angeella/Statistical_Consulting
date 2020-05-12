@@ -27,7 +27,7 @@ ggplotly(p)
 p<-datA %>%
   ggplot() +
   geom_tile(aes(x=date, y=id, fill=stay_home_restrictions)) +
-  labs(y = "Countries", x = "Date") +
+  labs(y = "Countries", x = "Date", fill = "Stay Home") +
   scale_fill_distiller(palette = "YlGnBu", direction = 1)
 
 ggplotly(p) %>% add_annotations( text="Stay Home", xref="paper", yref="paper",
@@ -35,4 +35,19 @@ ggplotly(p) %>% add_annotations( text="Stay Home", xref="paper", yref="paper",
                                  y=0.8, yanchor="bottom",    # Same y as legend below
                                  legendtitle=TRUE, showarrow=FALSE )  %>%
   layout( legend=list(y=0.8, yanchor="top" ) )
+
+
+outR <- sapply(datA$id, function(x) R0_compute(state = x,dataset = datA))
+
+df <- data.frame(label, mean, lower, upper)
+
+lattice::xyplot(R0mean ~ date| id, groups = id, data=datA,type=c('p','r'), auto.key=F)
+
+datA$Clusters <- as.factor(datA$Clusters)
+a <- ggplot(data=datA, aes(x=date, y=log(R0mean), col = Clusters)) +
+  geom_line() +
+  labs(x= "Time", y = expression(log R[0]))
+
+ggplotly(a)
+
 
