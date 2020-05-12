@@ -57,7 +57,9 @@ var_HS <- c("information_campaigns", "testing_policy", "contact_tracing","ox.H4_
            "ox.H5_Investment.in.vaccines", "health_exp", "health_exp_oop")
 
 index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index")
-
+#Changes for each day are compared to a baseline value for that day of the week.
+#The baseline is the median value, for the corresponding day of the week, during the 5-
+#week period Jan 3-Feb 6, 2020.
 var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_pharmacy_percent_change_from_baseline",
              "parks_percent_change_from_baseline", "transit_stations_percent_change_from_baseline",
              "workplaces_percent_change_from_baseline", "residential_percent_change_from_baseline")
