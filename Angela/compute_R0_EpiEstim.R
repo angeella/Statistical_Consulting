@@ -2,6 +2,7 @@
 
 #REF EpiEstim https://github.com/jstockwin/EpiEstimApp/wiki/Example:-EpiEstim-R-package
 #REF FIGA= https://rviews.rstudio.com/2020/03/05/covid-19-epidemiology-with-r/
+#REF earlyR = https://www.repidemicsconsortium.org/earlyR/
 
 #calculates a maximum-likelihood estimate for the reproduction number
 
