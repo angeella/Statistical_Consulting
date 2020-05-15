@@ -16,25 +16,25 @@ source("Michele/lib/long2wide.R") # per convertire il dataset default dal long a
 source("Michele/lib/merger.R") # per fare il join con altri dataset
 source("Michele/lib/policies.R") # contiene le codifiche delle politiche del dataset COVID19::covid19()
 source("Angela/Compute_R0.R")
+
 #pca la faccio su tutti gli stati e poi scremo dopo
 
 dat <- #list(countries=
   COVID19::covid19(level=1,
                    #ISO=c("ITA", "ESP", "FRA", "GBR","CHN", "IRL", "GRC", "ROU", 
                    #"RUS", "AUT", "PER", "ECU", "SAU", "NLD", "BEL", "USA", "TUR", 
-                    #"IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "BRA", "SWE", "SGP", "KOR"),
+                    #"IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "BRA", "SWE", "SGP", "KOR", "DEU"),
                    start="2020-01-01") %>% as.data.frame()
 
 ISO=c("ITA", "ESP", "FRA", "GBR","CHN", "IRL", "GRC", "ROU", 
 "RUS", "AUT", "PER", "ECU", "SAU", "NLD", "BEL", "USA", "TUR", 
-"IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "BRA", "SWE", "SGP", "KOR")
+"IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "BRA", "SWE", "SGP", "KOR", "DEU")
 
 
-dat <- merger(dat)
+#dat <- merger(dat)
 
-for (p in policies) {
-  dat[[p]] <- ordered(as.character(dat[[p]]), levels=names(policies.levels[[p]]))
-}
+policies=names(dat)[c(10:20)]
+
 dat<- add_R0(dataset = dat)
 
 #ecopolicies=names(dat)[c(78,81,83,85)] #prime due ordinali, seconde numeriche
@@ -42,6 +42,10 @@ dat<- add_R0(dataset = dat)
 
 #considero tutte insieme le variabili ordinali
 #policies=c(policies, names(dat)[c(78,81)] )
+
+saveRDS(uno, "uno.rds")
+saveRDS(due, "due.rds")
+saveRDS(tre, "tre.rds")
 
 ####### polychoric PCA for POLICIES ordinal variables
 
@@ -52,15 +56,30 @@ W$rho
 p3 <- principal(r = W$rho, nfactors = 6) 
 p3$loadings #prime 3 componenti
 cbind(policies, p3$loadings)
+distancematrix=as.dist(1-W$rho)^2
 
 #1a restrictions pol 
 #2a contact tracing +info+testing 
 #3a eco policies
 
-p3$scores <- factor.scores(sapply(dat[,policies], as.numeric),p3)
-PCpolicies=p3$scores$scores[,1:3]
-colnames(PCpolicies)=c("restrinctions", "tracing", "testing")
+#p3$scores <- factor.scores(sapply(dat[,policies], as.numeric),p3)
+#PCpolicies=p3$scores$scores[,1:3]
+#colnames(PCpolicies)=c("restrinctions", "tracing", "testing")
 
+centered=scale(dat[,policies], TRUE, FALSE)
+PCpolicies <- as.matrix(centered) %*% p3$weights
+
+clusters <- apply(PCpolicies[,c(1:3)], 1, function(x) which.max(x))
+
+c=data.frame(id=dat$id,clust=clusters)
+dataclust=aggregate(clusters, list(id=c$id), mean)
+
+dataclust$x=round(dataclust$x)
+
+dataclust[dataclust$id %in% ISO,]
+
+PCpolicies=PCpolicies[,c(1:3)]
+colnames(PCpolicies)=c("restrinctions", "tracing", "testing")
 
 ########## FUNCTIONAL ANALYSIS
 
@@ -123,10 +142,15 @@ test[res$cls==1,1]
 
 # troppi na nel mondo, nel nostro caso sostituisco i NA con zeri (ma boh)
 
-fiscalm=resdat$ox.E3_Fiscal.measures[,-1]
-intsupport=resdat$ox.E4_International.support[,-1]
-invhealth=resdat$ox.H4_Emergency.investment.in.healthcare[,-1]
-invax=resdat$ox.H5_Investment.in.vaccines[,-1]
+popxco=as.data.frame(dat %>% group_by(id) %>% distinct(pop))
+co=data.frame(id=resdat$ox.E3_Fiscal.measures[,1])
+
+coco=inner_join(co,popxco, by="id")
+
+fiscalm=resdat$ox.E3_Fiscal.measures[,-1]/coco$pop
+intsupport=resdat$ox.E4_International.support[,-1]/coco$pop
+invhealth=resdat$ox.H4_Emergency.investment.in.healthcare[,-1]/coco$pop
+invax=resdat$ox.H5_Investment.in.vaccines[,-1]/coco$pop
 
 
 #
@@ -152,20 +176,20 @@ iv=smoothing(invax)
 #provo con funHDDC
 # funziona apparentemente solo su univariato
 require(funHDDC)
-res2 <- funHDDC(tes, model = c('AkjBkQkDk', 'AkjBQkDk', 'AkBkQkDk', 'ABkQkDk', 'AkBQkDk', 'ABQkDk'),
+res2 <- funHDDC(tra, model = c('AkjBkQkDk', 'AkjBQkDk', 'AkBkQkDk', 'ABkQkDk', 'AkBQkDk', 'ABQkDk'),
                 K = 1:5) 
 # tracing: 3 cluster
 # restrictions: 3 cluster
 # tests: 
 
 
-# coclustering funLBM non funzionale
+# coclustering funLBM
 
-pol=abind(list(rs[,-1], tracing[,-1], test[,-1],fiscalm,intsupport,invax,invhealth), along=3)
+#pol=abind(list(rs[,-1], tracing[,-1], test[,-1],fiscalm,intsupport,invax,invhealth), along=3)
+require(abind)
+pol=abind(list(rs[,-1], tracing[,-1], test[,-1]), along=3)
 
-
-
-pol2=array(dim=c(27,7,107))
+pol2=array(dim=c(28,3,114))
 for (i in 1:dim(pol)[2]){
 for (j in 1:dim(pol)[3]){
  pol2[,j,i]=pol[,i,j]
@@ -174,7 +198,9 @@ for (j in 1:dim(pol)[3]){
 
 #senza var eco e san
 require(funLBM)
-ciao=funLBM(pol2[,-c(4:7),], K=2:3, L=2)
+ciao=funLBM(pol2, K=2:3, L=2)
+clust=data.frame(id=ISO[-5], cluster=ciao$row_clust)
+ciao$col_clust
 
 #clustering_da_salvare=ciao
 
@@ -185,17 +211,16 @@ uno=clust[clust$cluster==1,]$id
 due=clust[clust$cluster==2,]$id
 tre=clust[clust$cluster==3,]$id
 quattro=clust[clust$cluster==4,]$id
-#clust[clust$cluster==5,]$id
+cinque=clust[clust$cluster==5,]$id
 #clust[clust$cluster==6,]$id
 
 
-
 par(mfrow=c(1,3)) #poche restrizioni personali, no tracing eccetto per SWE,  del testing nella seconda parte
-plot(fdata(as.matrix(rs[rs$id %in% uno,-1])), main="Restrictions", ylim=c(-2,3.5))
-plot(fdata(as.matrix(tracing[tracing$id %in% uno,-1])), main="Tracing", ylim=c(-2,3.5))
-plot(fdata(as.matrix(test[test$id %in% uno,-1])), main="Testing", ylim=c(-2,3.5))
+plot(fdata(as.matrix(rs[rs$id %in% uno,-1])), main="Restriction-based", ylim=c(-2,3.5))
+plot(fdata(as.matrix(tracing[tracing$id %in% uno,-1])), main="Tracing-based", ylim=c(-2,3.5))
+plot(fdata(as.matrix(test[test$id %in% uno,-1])), main="Testing-based", ylim=c(-2,3.5))
 
-par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), testing peak in the middle of the crisis
+#par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), testing peak in the middle of the crisis
 plot(fdata(as.matrix(rs[rs$id %in% due,-1])), main="Restrictions", ylim=c(-2,3.5))
 plot(fdata(as.matrix(tracing[tracing$id %in% due,-1])), main="Tracing", ylim=c(-2,3.5))
 plot(fdata(as.matrix(test[test$id %in% due,-1])), main="Testing", ylim=c(-2,3.5))
@@ -211,11 +236,12 @@ plot(fdata(as.matrix(tracing[tracing$id %in% quattro,-1])), main="Tracing")
 plot(fdata(as.matrix(test[test$id %in% quattro,-1])), main="Testing")
 
 
-#### ora lo faccio con le var eco/san cumulate (non funziona troppi zero)
+#### ora lo faccio con le var eco/san cumulate
 require(funLBM)
-ciao=funLBM(pol2[,-c(4,5,6,7),], K=2:3, L=2)
-clust=data.frame(id=ISO[-5], cluster=ciao$row_clust)
-ciao$col_clust # chiaramente restrictions e tracing + testing sono diverse
+prova=funLBM(pol2, K=2:5, L=3)
+clust=data.frame(id=ISO[-5], cluster=prova$row_clust)
+prova$col_clust # chiaramente restrictions e tracing + testing sono diverse
+
 
 
 ##### provo con altro pacchetto mixedClust 
@@ -236,7 +262,7 @@ for (i in 1:dim(pol3)[2]){
 
 require(mixedClust)
 
-res=mixedCoclust(distrib_names = c("Functional"),kr = 3, kc = c(3),
+res=mixedCoclust(distrib_names = c("Functional"),kr = 3:5, kc = c(3),
                     init = "random", nbSEM = 120, nbSEMburn = 100,
                   nbindmini = 1, functionalData=pol4[,-5,seq(9,107, 2)])
 
@@ -257,7 +283,7 @@ plot(fdata(as.matrix(invax[test$id %in% un,])), main="InVax")
 plot(fdata(as.matrix(invhealth[test$id %in% un,])), main="InvHealth")
 
 
-par(mfrow=c(1,3)) #molte restrizioni (very uniform in the restriction pattern), no testing, very discontinuos tracing
+par(mfrow=c(2,3)) #molte restrizioni (very uniform in the restriction pattern), no testing, very discontinuos tracing
 plot(fdata(as.matrix(rs[rs$id %in% dos,-1])), main="Restrictions", ylim=c(-2,4))
 plot(fdata(as.matrix(tracing[tracing$id %in% dos,-1])), main="Tracing", ylim=c(-2,4))
 plot(fdata(as.matrix(test[test$id %in% dos,-1])), main="Testing", ylim=c(-2,4))
@@ -265,7 +291,7 @@ plot(fdata(as.matrix(fiscalm[test$id %in% dos,])), main="FiscalM")
 plot(fdata(as.matrix(invax[test$id %in% dos,])), main="InVax")
 plot(fdata(as.matrix(invhealth[test$id %in% dos,])), main="InvHealth")
 
-par(mfrow=c(1,3)) #testing molto elevato, tracing only in the first fase
+par(mfrow=c(2,3)) #testing molto elevato, tracing only in the first fase
 plot(fdata(as.matrix(rs[rs$id %in% tres,-1])), main="Restrictions", ylim=c(-2,4))
 plot(fdata(as.matrix(tracing[tracing$id %in% tres,-1])), main="Tracing", ylim=c(-2,4))
 plot(fdata(as.matrix(test[test$id %in% tres,-1])), main="Testing", ylim=c(-2,4))
