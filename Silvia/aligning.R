@@ -7,8 +7,6 @@ require(zoo)
 resdat=reshapami(dat)
 seldb=resdat$confirmed
 
-
-
 #alignment of the wide format
 # facciamo al 25 esimo giorno
 
@@ -18,13 +16,13 @@ firstc=apply(seldb[,-1], 1, function(x) min(which(x!=0)))
 
 missval=function(reshline){
   z=zoo(reshline)
-  z=na.spline(z)
+  z=na.approx(z, 1:85)
   return(z)
 }
 
 # aligning, cutting and na replacement function
 
-alignining=function(reshaped, fcdays=firstc){
+aligning=function(reshaped, fcdays=firstc){
   
    numdb=as.matrix(reshaped[,-1])
    alignedc=matrix(nrow=28,ncol=138)
@@ -32,11 +30,11 @@ alignining=function(reshaped, fcdays=firstc){
        if(fcdays[i]>25) alignedc[i,c(1:(114-fcdays[i]+25))]=numdb[i, c((fcdays[i]-24):114)]
        else alignedc[i,c((25+1-fcdays[i]):(114+25-fcdays[i]))]=numdb[i,]
      }
-    alignedc=alignedc[,c(20:99)] #80 righe (5 giorni prima del contagio + 75 dopo contagio)
-    finalmat=t(apply(alignedc, 1, function(x) missval(x)))
+    alignedc=alignedc[,c(15:99)] #80 righe (5 giorni prima del contagio + 75 dopo contagio)
+   # finalmat=t(apply(alignedc, 1, function(x) missval(x)))
     
-  return(finalmat)}
+  return(alignedc)}
 
-contagi=alignining(seldb)
+
 
 

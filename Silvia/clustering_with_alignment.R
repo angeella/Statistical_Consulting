@@ -34,13 +34,6 @@ ISO=c("ITA", "ESP", "FRA", "GBR","CHN", "IRL", "GRC", "ROU",
 
 policies=names(dat)[c(10:20)]
 
-dat<- add_R0(dataset = dat)
-
-#ecopolicies=names(dat)[c(78,81,83,85)] #prime due ordinali, seconde numeriche
-#healthpolicies=names(dat)[c(94,96)] #numeriche
-
-#considero tutte insieme le variabili ordinali
-#policies=c(policies, names(dat)[c(78,81)] )
 
 ####### polychoric PCA for POLICIES ordinal variables
 
@@ -61,8 +54,6 @@ p3$scores <- factor.scores(sapply(dat[,policies], as.numeric),p3)
 PCpolicies=p3$scores$scores[,1:3]
 colnames(PCpolicies)=c("restrinctions", "tracing", "testing")
 
-#centered=scale(dat[,policies], TRUE, FALSE)
-#PCpolicies <- as.matrix(centered) %*% p3$weights
 
 clusters <- apply(PCpolicies[,c(1:3)], 1, function(x) which.max(x))
 
@@ -72,9 +63,6 @@ dataclust=aggregate(clusters, list(id=c$id), mean)
 dataclust$x=round(dataclust$x)
 
 dataclust[dataclust$id %in% ISO,]
-
-#PCpolicies=PCpolicies[,c(1:3)]
-#colnames(PCpolicies)=c("restrinctions", "tracing", "testing")
 
 ########## FUNCTIONAL ANALYSIS
 
