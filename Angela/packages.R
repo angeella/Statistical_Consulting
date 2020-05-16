@@ -10,11 +10,15 @@ library(effects)
 library(lmPerm)
 library(earlyR)
 library(EpiEstim)
+library(tidyr)
+library(abind)
+library(reshape2)
+
 # per mappe...
 require(maps)
 require(rnaturalearth)
 require(rnaturalearthdata)
-
+require(psych)
 # librerie
 source("Michele/lib/long2wide.R") 
 source("Michele/lib/merger.R")
@@ -22,3 +26,4 @@ source("Michele/lib/merger.R")
 source("Michele/lib/lagdata.R") 
 source("Angela/Compute_R0.R")
 source("Angela/merge_dat_R0.R")
+source("Angela/compute_R0_ML.R")

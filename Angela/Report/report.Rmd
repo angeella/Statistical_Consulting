@@ -1,0 +1,152 @@
+---
+title: "Report Stat_Consulting"
+author: "Angela Andreella"
+date: "16/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+#load package
+source("Angela/packages.R")
+
+#load variables
+load("Angela/Data/var.RData")
+
+#load data
+load("Data/db_with_R0.RData")
+
+#add R0 ML
+dat <- add_R0_ML(df)
+
+#add Cluster Silvia aligned
+datMIO <- dat
+load("Silvia/clusterswithalign.Rdata")
+states_to_sel <- levels(uno)
+#length(states_to_sel) #28
+dat <- datMIO
+datA <- dat %>% filter(id %in% states_to_sel)
+
+datA$Clusters <- ifelse(datA$id %in% uno, "Cl1", 
+                        ifelse(datA$id %in% due | datA$id %in% sei, "Cl2", 
+                               ifelse(datA$id %in% tre, "Cl3", 
+                                      ifelse(datA$id %in% quattro, "Cl4", 
+                                             "Cl5"))))
+dat <- datA
+
+#Some steps 
+dat$dateF <- factor(dat$date)
+dat$Clusters <- factor(dat$Clusters)
+dat$EPOCH <- ifelse(dat$date <= "2020-02-15", "First",
+                    ifelse(dat$date <= "2020-03-15", "Second", "Third"))
+dat$EPOCH <- as.factor(dat$EPOCH)
+dat <- 
+  dat %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(R0_lag = dplyr::lag(R0, n = 14, default = NA))
+```
+
+# Motivation
+
+So, the aim is to understand how the lockdown policies influences the changing of the index $R0$, the reproduction number. However, this index has a non linear trend, then we want to capture this changing in the three epoches expressed in the following plot:
+
+```{r}
+dat %>% ggplot(aes(x=date, y=R0, group=Clusters, color=Clusters1)) + 
+  geom_smooth()
+```
+
+considering the clusters computed previously. We takes $3$ intervals, start to 15 of Febraury, 15 Febraury to 15 March, 15 March end. Also, we lag the R0 respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on $R0$ at time $t+14$, in order to make a correct impact.
+
+# Exploratory Analysis
+
+So, we have the following variables to consider:
+
+Economic ones:
+
+```{r}
+var_EC
+```
+
+Demographic ones:
+
+```{r}
+var_FIX
+```
+
+Health ones:
+
+```{r}
+var_HS
+```
+
+plus the number of tests conducted.
+
+```{r}
+cormat <- round(cor(dat[,c(var_EC, "R0_lag", var_FIX, var_HS)],use = "na.or.complete"),6)
+dat_cor <- melt(cormat)
+
+p <- ggplot(data = dat_cor, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+
+ggplotly(p)
+
+```
+
+# Model
+
+```{r}
+ggplot(dat, aes(x=EPOCH, y=R0_lag, fill=EPOCH)) + geom_boxplot() 
+```
+
+```{r}
+dat$Clusters <- recode_factor(dat$Clusters,
+                              "Cl1" = "tracing",
+                              "Cl2" = "restriction_tracing",
+                              "Cl3" = "testing",
+                              "Cl4" = "all",
+                              "Cl5" = "tracing_testing")
+```
+
+```{r}
+f <- as.formula(paste("R0_lag", "~", paste(c(var_EC[1:5]), collapse=" + "), 
+                      #"+", paste(c(var_FIX[7]), collapse=" + "),
+                      "+", paste(c(var_HS[1:3]), collapse=" + "),
+                      "+", "tests + deaths + recovered + icu + Clusters",
+                      "+ (1|EPOCH)"))
+```
+
+```{r}
+model1 <- lmer(f, data = dat,REML = TRUE)
+summary(model1)
+```
+
+# Interpretation
+
+```{r}
+comparison <- c("tracing - restriction_tracing = 0",
+                "tracing - testing = 0",
+                "tracing - all = 0",
+                "tracing - tracing_testing = 0",
+                "restriction_tracing - testing = 0",
+                "restriction_tracing - all = 0",
+                "restriction_tracing - tracing_testing = 0",
+                "testing - all = 0",
+                "testing - tracing_testing = 0",
+                "all - tracing_testing = 0")
+
+test<-multcomp::glht(model1, linfct = mcp(Clusters = comparison),adjusted="holm")
+summary(test)
+```
+
+```{r}
+eff <- data.frame(effect("Clusters", model1))
+#eff$Group <- factor(eff$Group,levels = c("cnt","fep","scz", "bipo"))
+
+ggplot(eff, aes(x=Clusters, y=fit)) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.1) +
+  geom_line(aes(group = 1)) + 
+  geom_point(aes(x=reorder(Clusters, upper, desc), y=fit))+
+  xlab("Clusters") + ylab("R0")
+```
+
