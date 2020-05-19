@@ -21,30 +21,45 @@ load("Data/db_with_R0.RData")
 dat <- add_R0_ML(df)
 
 #add Cluster Silvia aligned
-datMIO <- dat
-load("Silvia/clusterswithalign.Rdata")
-states_to_sel <- levels(uno)
+#datMIO <- dat
+#load("Silvia/")
+uno <- c( "CAN", "DEU", "GBR", "SWE", "USA")
+due <- c("IRL", "IRN", "ITA", "NLD", "TUR")
+tre <- c( "AUT", "BEL", "CHE", "DNK", "ESP", "FIN", "FRA", "NOR","RUS")
+quattro <- c("KOR", "SGP")
+cinque <- c("GRC", "PRT", "ROU", "SAU")
+states_to_sel <- c(uno,due,tre,quattro,cinque)
+#states_to_sel <- levels(uno)
 #length(states_to_sel) #28
-dat <- datMIO
+#dat <- datMIO
 datA <- dat %>% filter(id %in% states_to_sel)
 
 datA$Clusters <- ifelse(datA$id %in% uno, "Cl1", 
-                        ifelse(datA$id %in% due | datA$id %in% sei, "Cl2", 
+                        ifelse(datA$id %in% due, "Cl2", 
                                ifelse(datA$id %in% tre, "Cl3", 
                                       ifelse(datA$id %in% quattro, "Cl4", 
                                              "Cl5"))))
 dat <- datA
 
 #Some steps 
-dat$dateF <- factor(dat$date)
+#dat$dateF <- factor(dat$date)
 dat$Clusters <- factor(dat$Clusters)
-dat$EPOCH <- ifelse(dat$date <= "2020-02-15", "First",
-                    ifelse(dat$date <= "2020-03-15", "Second", "Third"))
-dat$EPOCH <- as.factor(dat$EPOCH)
+#dat$EPOCH <- ifelse(dat$date <= "2020-02-15", "First",
+#                    ifelse(dat$date <= "2020-03-15", "Second", "Third"))
+#dat$EPOCH <- as.factor(dat$EPOCH)
 dat <- 
   dat %>% arrange(id, date) %>%
   group_by(id) %>%
   mutate(R0_lag = dplyr::lag(R0, n = 14, default = NA))
+
+dat_shape <- dat %>%
+  left_join(dat %>%
+              filter(confirmed >= 0) %>%
+              group_by(id) %>%
+              summarise(date.start=min(date)),
+            by="id") %>%
+  mutate(date2=date-date.start) %>%
+  as.data.frame()
 ```
 
 # Motivation
@@ -52,12 +67,21 @@ dat <-
 So, the aim is to understand how the lockdown policies influences the changing of the index $R0$, the reproduction number. However, this index has a non linear trend, then we want to capture this changing in the three epoches expressed in the following plot:
 
 ```{r}
-dat %>% ggplot(aes(x=date, y=R0, group=Clusters, color=Clusters)) +
+dat %>% ggplot(aes(x=date, y=R0_lag, group=Clusters, color=Clusters)) +
   geom_smooth() + geom_vline(xintercept = as.Date("2020-02-15"),linetype="dashed") + geom_vline(xintercept = as.Date("2020-03-15"),linetype="dashed") + scale_x_date(date_labels = "%b %d")
 
 ```
 
-considering the clusters computed previously. We takes $3$ intervals, start to 15 of Febraury, 15 Febraury to 15 March, 15 March end. Also, we lag the R0 respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on $R0$ at time $t+14$, in order to make a correct impact.
+considering the clusters computed previously. We takes $3$ intervals, start to 15 of Febraury, 15 Febraury to 15 March, 15 March end. 
+
+However, if we consider the aligned data respect to the first 30 confirmed cases, we have the following situation:
+
+```{r}
+dat_shape$date2 <- as.integer(dat_shape$date2)
+dat_shape %>% ggplot(aes(x=date2, y=R0_lag, group=Clusters, color=Clusters)) + geom_smooth()
+```
+
+Also, we lag the R0 respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on $R0$ at time $t+14$, in order to make a correct impact.
 
 # Exploratory Analysis
 
@@ -84,7 +108,7 @@ var_HS
 plus the number of tests conducted.
 
 ```{r}
-cormat <- round(cor(dat[,c(var_EC, "R0_lag", var_FIX, var_HS)],use = "na.or.complete"),6)
+cormat <- round(cor(dat_shape[,c(var_EC, "R0_lag", var_FIX, var_HS)],use = "na.or.complete"),6)
 dat_cor <- melt(cormat)
 
 p <- ggplot(data = dat_cor, aes(x=Var1, y=Var2, fill=value)) + 
@@ -97,14 +121,22 @@ ggplotly(p)
 ## Economic variables
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.E1_Income.support, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date, y=ox.E1_Income.support, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 ```
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.E2_Debt.contract.relief, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=R0_lag, y=ox.E1_Income.support)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+
+```{r}
+p <- dat_shape %>% ggplot(aes(x=date2, y=ox.E2_Debt.contract.relief, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
@@ -113,90 +145,80 @@ ggplotly(p)
 Fai policorica per queste due var ordinali economiche!
 
 ```{r}
-pca_EC <- polychoric(dat[,var_EC[1:2]])
+pca_EC <- polychoric(dat_shape[,var_EC[1:2]])
 p3 <- principal(r = pca_EC$rho, nfactors = 1) 
-dat$EC_pca <- as.matrix(dat[,var_EC[1:2]]) %*% p3$weights
+dat_shape$EC_pca <- as.matrix(dat_shape[,var_EC[1:2]]) %*% p3$weights
 ```
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=EC_pca, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=EC_pca, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 ```
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.E3_Fiscal.measures, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=ox.E3_Fiscal.measures, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 
-dat$ox.E3_Fiscal.measures_log <- log(dat$ox.E3_Fiscal.measures +1)
+dat_shape$ox.E3_Fiscal.measures_log <- log(dat_shape$ox.E3_Fiscal.measures +1)
 ```
 
 Usa in log scale
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.E4_International.support, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=ox.E4_International.support, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 
-dat$ox.E4_International.support <- ifelse(is.na(dat$ox.E4_International.support), 0, dat$ox.E4_International.support)
-dat$ox.E4_International.support_log <- log(dat$ox.E4_International.support +1)
+dat_shape$ox.E4_International.support <- ifelse(is.na(dat$ox.E4_International.support), 0, dat_shape$ox.E4_International.support)
+dat_shape$ox.E4_International.support_log <- log(dat_shape$ox.E4_International.support +1)
 
 ```
 
 Usa in log scale, sostiuisci NA con 0.
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=mkt_close, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=mkt_close, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 ```
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.E2_Debt.contract.relief-ox.E1_Income.support, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=mkt_volume, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
 ```
 
-So, we drop off Fiscal measures. We consider one of Income Support and Debt contract relief having:
-
-```{r}
-p <- dat %>% ggplot(aes(x=date, y=mkt_volume, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-```
-
-Also we decide between mkt_close and mkt_volume.
 
 ## Fix variables
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=log(pop), fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=log(pop), fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
 
-dat$pop_log <- log(dat$pop +1)
+dat_shape$pop_log <- log(dat_shape$pop +1)
 
 ```
 
 passa al log
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=pop_65, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=pop_65, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
 ```
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=pop_age, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=pop_age, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
@@ -205,23 +227,23 @@ ggplotly(p)
 facciamo una pca di queste due
 
 ```{r}
-pca_age <- princomp(is.na(dat[,var_FIX[2:3]]), cor = TRUE)
-dat$pca_age <- dat[,var_FIX[2]]
-dat$pca_age <- ifelse(is.na(dat$pca_age), NA, pca_age$scores)
+pca_age <- princomp(is.na(dat_shape[,var_FIX[2:3]]), cor = TRUE)
+dat_shape$pca_age <- dat_shape[,var_FIX[2]]
+dat_shape$pca_age <- ifelse(is.na(dat_shape$pca_age), NA, pca_age$scores)
 ```
 
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=pop_density, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=pop_density, fill=Clusters)) + geom_boxplot() 
 
-dat$pop_density_log <- log(dat$pop_density + 1)
+dat_shape$pop_density_log <- log(dat_shape$pop_density + 1)
 ggplotly(p)
 ```
 
 Togli Singapore. e metti log
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=hosp_beds, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=hosp_beds, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
@@ -230,7 +252,7 @@ ggplotly(p)
 ```
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=pop_death_rate, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=pop_death_rate, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
@@ -241,32 +263,30 @@ p <- ggplot(dat, aes(x=Clusters, y=gdp, fill=Clusters)) + geom_boxplot()
 
 
 ggplotly(p)
-dat$gdp_log <- log(dat$gdp + 1)
+dat_shape$gdp_log <- log(dat_shape$gdp + 1)
 
 ```
 
 fai il log
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=health_exp, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=health_exp, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
 ```
 
 ```{r}
-p <- ggplot(dat, aes(x=Clusters, y=health_exp_oop, fill=Clusters)) + geom_boxplot() 
+p <- ggplot(dat_shape, aes(x=Clusters, y=health_exp_oop, fill=Clusters)) + geom_boxplot() 
 
 
 ggplotly(p)
 ```
-
-only the third clusters has a difference between these two measures.
 
 ## Health variables
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.H4_Emergency.investment.in.healthcare, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=ox.H4_Emergency.investment.in.healthcare, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
@@ -275,7 +295,7 @@ ggplotly(p)
 metti log
 
 ```{r}
-p <- dat %>% ggplot(aes(x=date, y=ox.H5_Investment.in.vaccines, group=Clusters, color=Clusters)) +
+p <- dat_shape %>% ggplot(aes(x=date2, y=ox.H5_Investment.in.vaccines, group=Clusters, color=Clusters)) +
   geom_smooth() 
 
 ggplotly(p)
@@ -283,11 +303,6 @@ ggplotly(p)
 
 fai la pca con queste due
 
-```{r}
-pca_hs <- princomp(is.na(dat[,var_HS]), cor = TRUE)
-dat$pca_hs <- dat[,var_HS]
-dat$pca_hs <- ifelse(is.na(dat$pca_hs), NA, pca_hs$scores)
-```
 
 # Model
 
@@ -300,17 +315,10 @@ The data are observed for each country nested within date.
 - The Intraclass Correlation Coefficient (ICC) is equal to 0.46.
 
 ```{r}
-dat_shape <- dat %>%
-  left_join(dat %>%
-              filter(confirmed >= 30) %>%
-              group_by(id) %>%
-              summarise(date.start=min(date)),
-            by="id") %>%
-  mutate(date2=date-date.start) %>%
-  as.data.frame()
 
+ICCest(date2, R0_lag, dat_shape) #0.5268934
+ICCest(EPOCH, R0, dat_shape) #0.5268934
 
-ICCest(date2, R0, dat_shape) #0.5235241
 abc<-aggregate(R0 ~date2, dat_shape, mean)
 bdata <- dat_shape
 bdata <- merge(bdata,abc,by="date2")
@@ -325,25 +333,6 @@ ggplot(bdata, aes(x=date2, y=R0.x, fill = colorBox)) +
 
 ```
 
-However, we can consider the three epoches:
-
-```{r}
-ICCest(EPOCH, R0, dat_shape) #0.4800968
-abc<-aggregate(R0 ~EPOCH, dat_shape, mean)
-bdata <- dat_shape
-bdata <- merge(bdata,abc,by="EPOCH")
-bdata$colorBox <- ifelse(bdata$R0.y>= mean(na.omit(bdata$R0.x)), "#56B4E9", "#009E73")
-
-bdata$date <- as.factor(bdata$EPOCH)
-ggplot(bdata, aes(x=EPOCH, y=R0.x, fill = colorBox)) +
-    geom_boxplot() +
-  scale_color_manual(values=rainbow(6))+ theme(legend.position="none",axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-
-```
-
-
 **How to choose the random and fixed part?**
 
 The problem is much more complicated than in linear regression because selection on the covariance structure is not straightforward due to computational issues and boundary problems arising from positive semidefinite constraints on covariance matrices.
@@ -354,7 +343,7 @@ The problem is much more complicated than in linear regression because selection
 
 ```{r}
 df <- as.data.frame(aggregate(R0 ~date2, dat_shape, length)) %>% arrange(desc(R0))
-ggplot(dat_shape[(dat_shape$date2 %in% df$date2),], aes(x = hosp_beds, y = R0, group = EPOCH)) +
+ggplot(dat_shape[(dat_shape$date2 %in% df$date2),], aes(x = hosp_beds, y = R0, group = date2)) +
   geom_smooth(method = "lm", se = FALSE, color = "darkgrey") +
   geom_point(alpha = 0.3, size = 3,color="blue") +
   facet_wrap(~date2) +
@@ -366,17 +355,17 @@ Variability on health_exp, gdp, mkt_close, mkt_volume, hosp_beds, pop_65, pop_ag
 
 ```{r}
 dat_shape$Clusters <- recode_factor(dat_shape$Clusters,
-                              "Cl1" = "tracing",
-                              "Cl2" = "restriction_tracing",
-                              "Cl3" = "testing",
-                              "Cl4" = "all",
-                              "Cl5" = "tracing_testing")
+                              "Cl1" = "testing_based",
+                              "Cl2" = "restrinctionsStrong_testingMild_based",
+                              "Cl3" = "mild_levels_all",
+                              "Cl4" = "testing_tracing_based",
+                              "Cl5" = "restriction_tracingMild")
 ```
 
 ```{r}
-var_EC <- c("pca_ec", var_EC[5:6], "ox.E3_Fiscal.measures_log", "ox.E4_International.support")
+var_EC <- c("EC_pca", var_EC[5:6], "ox.E3_Fiscal.measures_log", "ox.E4_International.support_log")
 
-var_FIX <- c("pca_ec", "pop_log", "pop_density_log", "hosp_beds", "pop_death_rate", "gdp_log", "health_exp")
+var_FIX <- c("pca_age", "pop_log", "pop_density_log", "hosp_beds", "pop_death_rate", "gdp_log", "health_exp")
 
 var_HS <- "pca_hs"
 f <- as.formula(paste("R0_lag", "~", paste(c(var_EC), collapse=" + "), 
@@ -385,34 +374,68 @@ f <- as.formula(paste("R0_lag", "~", paste(c(var_EC), collapse=" + "),
                       "+", "tests + Clusters",
                       "+ (1 |date2) + (1|id)"))
 
-```
-
-```{r}
 model <- lmer(f, data = dat_shape,REML=FALSE)
 summary(model)
-f1 <- as.formula(paste("R0_lag", "~", paste(c(var_EC[c(1,2,6)]), collapse=" + "), 
-                      "+", paste(c(var_FIX[c(1,2,3,5,7)]), collapse=" + "),
-                      "+", paste(c(var_HS[c(1,2)]), collapse=" + "),
-                      "+", "tests + icu + Clusters",
-                      "+ (1 |EPOCH)"))
-model1 <- lmer(f1, data = dat, REML=FALSE)
-
-summary(model1)
-plot_model(model)
-
-model2 <- lmer(R0_lag ~ ox.E1_Income.support + ox.E3_Fiscal.measures + ox.E4_International.support + mkt_volume + pop + pop_age + hosp_beds + gdp   + health_exp  + icu + Clusters + (1 |EPOCH), data = dat, REML=FALSE)
-cAIC(model2)
-model3 <- lmer(R0_lag ~ ox.E1_Income.support + ox.E3_Fiscal.measures + ox.E4_International.support + mkt_volume + pop + pop_age + hosp_beds + gdp   + health_exp  + icu  + Clusters + (1 |EPOCH) + (1 | id), data = dat_shape, REML=FALSE)
-cAIC(model3)
-summary(model3)
-heatmap(as.matrix(vcov(model2)))
 ```
 
-Ho provato delle random slope ma troppa correlazione e var bassa
-
+da aggiustare le pca :( errore
 
 ```{r}
-plot_model(model3, type = "pred", terms = c("Clusters"))
+load("Angela/Data/var.RData")
+var_EC <- c(var_EC[c(1:2,5:6)], "ox.E3_Fiscal.measures_log", "ox.E4_International.support_log")
+
+var_FIX <- c( "pop_65","pop_age", "pop_log", "pop_density_log", "hosp_beds", "pop_death_rate", "gdp_log", "health_exp")
+dat_shape2 <- dat_shape %>% filter(date2 >= 0 )
+f1 <- as.formula(paste("R0_lag", "~", paste(c(var_EC[c(2,4)]), collapse=" + "), 
+                      "+", paste(c(var_FIX[c(2,4,8)]), collapse=" + "),
+                      "+", paste(c(var_HS[2]), collapse=" + "),
+                      "+", "tests + Clusters",
+                      "+ (1 |date) + (1|id/Clusters)"))
+
+model1 <- lmer(f1, data = dat_shape, REML=FALSE)
+
+summary(model1)
+
+f2 <- as.formula(paste("R0_lag", "~", paste(c(var_EC), collapse=" + "), 
+                      "+", paste(c(var_FIX), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                      "+", "tests + Clusters",
+                      "+ (1 |date2)"))
+
+model2 <- lmer(f2, data = dat_shape, REML=FALSE)
+summary(model2)
+cAIC(model1)
+cAIC(model2)
+
+#togliamo l id visto che é var 0 e stesso cAIC
+
+f3 <- as.formula(paste("R0_lag", "~", paste(c(var_EC[c(1,2,3,4)]), collapse=" + "),   
+                      "+", paste(c(var_FIX[c(1,5,6,8)]), collapse=" + "),
+                      "+", paste(c(var_HS[1]), collapse=" + "),
+                      "+", "tests + Clusters",
+                      "+ (1 + ox.E3_Fiscal.measures_log|date2)"))
+
+model3 <- lmer(f3, data = dat_shape, REML=FALSE)
+summary(model3)
+
+f4 <- as.formula(paste("R0_lag", "~", paste(c(var_EC[c(1,2,4)]), collapse=" + "), 
+                      "+", paste(c(var_FIX[c(2,4,5,8)]), collapse=" + "),
+                      "+", paste(c(var_HS[2]), collapse=" + "),
+                      "+", "Clusters",
+                      "+ (1 |date2)"))
+
+model4 <- lmer(f4, data = dat_shape, REML=FALSE)
+summary(model4)
+
+KRmodcomp(model3,model4)
+
+#Continuiamo con model3
+
+heatmap(as.matrix(vcov(model3)))
+```
+
+```{r}
+plot_model(model1, type = "pred", terms = c("Clusters"))
 plot_model(model3)
 ```
 
@@ -420,23 +443,23 @@ plot_model(model3)
 # Interpretation
 
 ```{r}
-comparison <- c("tracing - restriction_tracing = 0",
-                "tracing - testing = 0",
-                "tracing - all = 0",
-                "tracing - tracing_testing = 0",
-                "restriction_tracing - testing = 0",
-                "restriction_tracing - all = 0",
-                "restriction_tracing - tracing_testing = 0",
-                "testing - all = 0",
-                "testing - tracing_testing = 0",
-                "all - tracing_testing = 0")
+comparison <- c("testing_based - restrinctionsStrong_testingMild_based = 0",
+                "testing_based - mild_levels_all = 0",
+                "testing_based - testing_tracing_based = 0",
+                "testing_based - restriction_tracingMild = 0",
+                "restrinctionsStrong_testingMild_based - mild_levels_all = 0",
+                "restrinctionsStrong_testingMild_based - testing_tracing_based = 0",
+                "restrinctionsStrong_testingMild_based - restriction_tracingMild = 0",
+                "mild_levels_all - testing_tracing_based = 0",
+                "mild_levels_all - restriction_tracingMild = 0",
+                "testing_tracing_based - restriction_tracingMild = 0")
 
-test<-multcomp::glht(model3, linfct = mcp(Clusters = comparison),adjusted="holm")
+test<-multcomp::glht(model1, linfct = mcp(Clusters = comparison),adjusted="holm")
 summary(test)
 ```
 
 ```{r}
-eff <- data.frame(effect("Clusters", model2))
+eff <- data.frame(effect("Clusters", model1))
 #eff$Group <- factor(eff$Group,levels = c("cnt","fep","scz", "bipo"))
 
 ggplot(eff, aes(x=Clusters, y=fit)) + 
