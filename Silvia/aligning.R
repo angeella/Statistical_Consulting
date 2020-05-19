@@ -1,16 +1,5 @@
 
 
-# alignment at the day of the first contagion (from 10 days before)
-
-require(zoo)
-
-resdat=reshapami(dat)
-seldb=resdat$confirmed
-
-#alignment of the wide format
-# facciamo al 25 esimo giorno
-
-firstc=apply(seldb[,-1], 1, function(x) min(which(x!=0)))
 
 # missing values treatment via spline approx
 
@@ -23,7 +12,7 @@ missval=function(reshline){
 # aligning, cutting and na replacement function
 
 aligning=function(reshaped, fcdays=firstc){
-  
+ 
    numdb=as.matrix(reshaped[,-1])
    alignedc=matrix(nrow=28,ncol=138)
    for (i in 1:28){
