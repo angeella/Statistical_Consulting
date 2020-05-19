@@ -1,7 +1,3 @@
-
-source("Angela/packages.R")
-source("Angela/loadData.R")
-
 #Divide variables between
 #1. SOCIAL LOCKDOWN
 #2. FIX VARIABLES
@@ -11,20 +7,18 @@ source("Angela/loadData.R")
 #6. MOBILITY
 #7. COVID
 
-colnames(dat1)
-
 var_LD <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions",
          "transport_closing", "stay_home_restrictions", "internal_movement_restrictions")
 var_FIX <- c("pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
-             "gdp")
+             "gdp", "health_exp", "health_exp_oop")
 
 var_EC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief", "ox.E3_Fiscal.measures",
             "ox.E4_International.support", "mkt_close", "mkt_volume")
 
-var_HS <- c("information_campaigns", "testing_policy", "contact_tracing","ox.H4_Emergency.investment.in.healthcare",
-           "ox.H5_Investment.in.vaccines", "health_exp", "health_exp_oop")
+var_HS <- c("ox.H4_Emergency.investment.in.healthcare",
+           "ox.H5_Investment.in.vaccines")
 
-index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index")
+index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index", "R0")
 #Changes for each day are compared to a baseline value for that day of the week.
 #The baseline is the median value, for the corresponding day of the week, during the 5-
 #week period Jan 3-Feb 6, 2020.
@@ -35,8 +29,11 @@ var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_
 var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical", "hosp",
                "vent", "icu")
 
+policies <- c("school_closing","workplace_closing","cancel_events", "gatherings_restrictions",
+              "transport_closing","stay_home_restrictions","internal_movement_restrictions",
+              "international_movement_restrictions","information_campaigns","testing_policy","contact_tracing")
 
-save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
+save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID, policies,file = "Angela/Data/var.RData")
 
 ##Plus obviously country (id) and date
 
