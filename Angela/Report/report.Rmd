@@ -52,8 +52,9 @@ dat <-
 So, the aim is to understand how the lockdown policies influences the changing of the index $R0$, the reproduction number. However, this index has a non linear trend, then we want to capture this changing in the three epoches expressed in the following plot:
 
 ```{r}
-dat %>% ggplot(aes(x=date, y=R0, group=Clusters, color=Clusters1)) + 
-  geom_smooth()
+dat %>% ggplot(aes(x=date, y=R0, group=Clusters, color=Clusters)) +
+  geom_smooth() + geom_vline(xintercept = as.Date("2020-02-15"),linetype="dashed") + geom_vline(xintercept = as.Date("2020-03-15"),linetype="dashed") + scale_x_date(date_labels = "%b %d")
+
 ```
 
 considering the clusters computed previously. We takes $3$ intervals, start to 15 of Febraury, 15 Febraury to 15 March, 15 March end. Also, we lag the R0 respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on $R0$ at time $t+14$, in order to make a correct impact.
@@ -93,14 +94,278 @@ ggplotly(p)
 
 ```
 
-# Model
+## Economic variables
 
 ```{r}
-ggplot(dat, aes(x=EPOCH, y=R0_lag, fill=EPOCH)) + geom_boxplot() 
+p <- dat %>% ggplot(aes(x=date, y=ox.E1_Income.support, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
 ```
 
 ```{r}
-dat$Clusters <- recode_factor(dat$Clusters,
+p <- dat %>% ggplot(aes(x=date, y=ox.E2_Debt.contract.relief, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+Fai policorica per queste due var ordinali economiche!
+
+```{r}
+pca_EC <- polychoric(dat[,var_EC[1:2]])
+p3 <- principal(r = pca_EC$rho, nfactors = 1) 
+dat$EC_pca <- as.matrix(dat[,var_EC[1:2]]) %*% p3$weights
+```
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=EC_pca, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=ox.E3_Fiscal.measures, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+
+dat$ox.E3_Fiscal.measures_log <- log(dat$ox.E3_Fiscal.measures +1)
+```
+
+Usa in log scale
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=ox.E4_International.support, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+
+dat$ox.E4_International.support <- ifelse(is.na(dat$ox.E4_International.support), 0, dat$ox.E4_International.support)
+dat$ox.E4_International.support_log <- log(dat$ox.E4_International.support +1)
+
+```
+
+Usa in log scale, sostiuisci NA con 0.
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=mkt_close, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=ox.E2_Debt.contract.relief-ox.E1_Income.support, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+So, we drop off Fiscal measures. We consider one of Income Support and Debt contract relief having:
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=mkt_volume, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+Also we decide between mkt_close and mkt_volume.
+
+## Fix variables
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=log(pop), fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+
+dat$pop_log <- log(dat$pop +1)
+
+```
+
+passa al log
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=pop_65, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+```
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=pop_age, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+```
+
+facciamo una pca di queste due
+
+```{r}
+pca_age <- princomp(is.na(dat[,var_FIX[2:3]]), cor = TRUE)
+dat$pca_age <- dat[,var_FIX[2]]
+dat$pca_age <- ifelse(is.na(dat$pca_age), NA, pca_age$scores)
+```
+
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=pop_density, fill=Clusters)) + geom_boxplot() 
+
+dat$pop_density_log <- log(dat$pop_density + 1)
+ggplotly(p)
+```
+
+Togli Singapore. e metti log
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=hosp_beds, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+
+
+```
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=pop_death_rate, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+```
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=gdp, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+dat$gdp_log <- log(dat$gdp + 1)
+
+```
+
+fai il log
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=health_exp, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+```
+
+```{r}
+p <- ggplot(dat, aes(x=Clusters, y=health_exp_oop, fill=Clusters)) + geom_boxplot() 
+
+
+ggplotly(p)
+```
+
+only the third clusters has a difference between these two measures.
+
+## Health variables
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=ox.H4_Emergency.investment.in.healthcare, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+metti log
+
+```{r}
+p <- dat %>% ggplot(aes(x=date, y=ox.H5_Investment.in.vaccines, group=Clusters, color=Clusters)) +
+  geom_smooth() 
+
+ggplotly(p)
+```
+
+fai la pca con queste due
+
+```{r}
+pca_hs <- princomp(is.na(dat[,var_HS]), cor = TRUE)
+dat$pca_hs <- dat[,var_HS]
+dat$pca_hs <- ifelse(is.na(dat$pca_hs), NA, pca_hs$scores)
+```
+
+# Model
+
+The data are observed for each country nested within date. 
+
+- Two-level model: the units of analysis (Level 1), countries, are nested within randomly sampled clusters (Level 2), date;
+
+- The variability of the data comes from nested sources;
+
+- The Intraclass Correlation Coefficient (ICC) is equal to 0.46.
+
+```{r}
+dat_shape <- dat %>%
+  left_join(dat %>%
+              filter(confirmed >= 30) %>%
+              group_by(id) %>%
+              summarise(date.start=min(date)),
+            by="id") %>%
+  mutate(date2=date-date.start) %>%
+  as.data.frame()
+
+
+ICCest(date2, R0, dat_shape) #0.5235241
+abc<-aggregate(R0 ~date2, dat_shape, mean)
+bdata <- dat_shape
+bdata <- merge(bdata,abc,by="date2")
+bdata$colorBox <- ifelse(bdata$R0.y>= mean(na.omit(bdata$R0.x)), "#56B4E9", "#009E73")
+
+bdata$date2 <- as.factor(bdata$date2)
+ggplot(bdata, aes(x=date2, y=R0.x, fill = colorBox)) +
+    geom_boxplot() +
+  scale_color_manual(values=rainbow(6))+ theme(legend.position="none",axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
+However, we can consider the three epoches:
+
+```{r}
+ICCest(EPOCH, R0, dat_shape) #0.4800968
+abc<-aggregate(R0 ~EPOCH, dat_shape, mean)
+bdata <- dat_shape
+bdata <- merge(bdata,abc,by="EPOCH")
+bdata$colorBox <- ifelse(bdata$R0.y>= mean(na.omit(bdata$R0.x)), "#56B4E9", "#009E73")
+
+bdata$date <- as.factor(bdata$EPOCH)
+ggplot(bdata, aes(x=EPOCH, y=R0.x, fill = colorBox)) +
+    geom_boxplot() +
+  scale_color_manual(values=rainbow(6))+ theme(legend.position="none",axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
+
+**How to choose the random and fixed part?**
+
+The problem is much more complicated than in linear regression because selection on the covariance structure is not straightforward due to computational issues and boundary problems arising from positive semidefinite constraints on covariance matrices.
+
+-Conditional AIC (Package cAIC4): The conditional AIC is also appropriate for choosing between a simple null model without any random effects and a complex model incorporating random effects,
+
+-Boostrap (R Package pbkrtest): Model comparison of nested models using parametric bootstrap methods. Implemented for some commonly applied model types.
+
+```{r}
+df <- as.data.frame(aggregate(R0 ~date2, dat_shape, length)) %>% arrange(desc(R0))
+ggplot(dat_shape[(dat_shape$date2 %in% df$date2),], aes(x = hosp_beds, y = R0, group = EPOCH)) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkgrey") +
+  geom_point(alpha = 0.3, size = 3,color="blue") +
+  facet_wrap(~date2) +
+  theme_minimal()
+#ggsave("Exploratory.pdf")
+```
+
+Variability on health_exp, gdp, mkt_close, mkt_volume, hosp_beds, pop_65, pop_age, pop_death_rate (not to much between first and third), 
+
+```{r}
+dat_shape$Clusters <- recode_factor(dat_shape$Clusters,
                               "Cl1" = "tracing",
                               "Cl2" = "restriction_tracing",
                               "Cl3" = "testing",
@@ -109,17 +374,48 @@ dat$Clusters <- recode_factor(dat$Clusters,
 ```
 
 ```{r}
-f <- as.formula(paste("R0_lag", "~", paste(c(var_EC[1:5]), collapse=" + "), 
-                      #"+", paste(c(var_FIX[7]), collapse=" + "),
-                      "+", paste(c(var_HS[1:3]), collapse=" + "),
-                      "+", "tests + deaths + recovered + icu + Clusters",
-                      "+ (1|EPOCH)"))
+var_EC <- c("pca_ec", var_EC[5:6], "ox.E3_Fiscal.measures_log", "ox.E4_International.support")
+
+var_FIX <- c("pca_ec", "pop_log", "pop_density_log", "hosp_beds", "pop_death_rate", "gdp_log", "health_exp")
+
+var_HS <- "pca_hs"
+f <- as.formula(paste("R0_lag", "~", paste(c(var_EC), collapse=" + "), 
+                  #   "+", paste(c(var_FIX), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                      "+", "tests + Clusters",
+                      "+ (1 |date2) + (1|id)"))
+
 ```
 
 ```{r}
-model1 <- lmer(f, data = dat,REML = TRUE)
+model <- lmer(f, data = dat_shape,REML=FALSE)
+summary(model)
+f1 <- as.formula(paste("R0_lag", "~", paste(c(var_EC[c(1,2,6)]), collapse=" + "), 
+                      "+", paste(c(var_FIX[c(1,2,3,5,7)]), collapse=" + "),
+                      "+", paste(c(var_HS[c(1,2)]), collapse=" + "),
+                      "+", "tests + icu + Clusters",
+                      "+ (1 |EPOCH)"))
+model1 <- lmer(f1, data = dat, REML=FALSE)
+
 summary(model1)
+plot_model(model)
+
+model2 <- lmer(R0_lag ~ ox.E1_Income.support + ox.E3_Fiscal.measures + ox.E4_International.support + mkt_volume + pop + pop_age + hosp_beds + gdp   + health_exp  + icu + Clusters + (1 |EPOCH), data = dat, REML=FALSE)
+cAIC(model2)
+model3 <- lmer(R0_lag ~ ox.E1_Income.support + ox.E3_Fiscal.measures + ox.E4_International.support + mkt_volume + pop + pop_age + hosp_beds + gdp   + health_exp  + icu  + Clusters + (1 |EPOCH) + (1 | id), data = dat_shape, REML=FALSE)
+cAIC(model3)
+summary(model3)
+heatmap(as.matrix(vcov(model2)))
 ```
+
+Ho provato delle random slope ma troppa correlazione e var bassa
+
+
+```{r}
+plot_model(model3, type = "pred", terms = c("Clusters"))
+plot_model(model3)
+```
+
 
 # Interpretation
 
@@ -135,12 +431,12 @@ comparison <- c("tracing - restriction_tracing = 0",
                 "testing - tracing_testing = 0",
                 "all - tracing_testing = 0")
 
-test<-multcomp::glht(model1, linfct = mcp(Clusters = comparison),adjusted="holm")
+test<-multcomp::glht(model3, linfct = mcp(Clusters = comparison),adjusted="holm")
 summary(test)
 ```
 
 ```{r}
-eff <- data.frame(effect("Clusters", model1))
+eff <- data.frame(effect("Clusters", model2))
 #eff$Group <- factor(eff$Group,levels = c("cnt","fep","scz", "bipo"))
 
 ggplot(eff, aes(x=Clusters, y=fit)) + 
@@ -148,5 +444,26 @@ ggplot(eff, aes(x=Clusters, y=fit)) +
   geom_line(aes(group = 1)) + 
   geom_point(aes(x=reorder(Clusters, upper, desc), y=fit))+
   xlab("Clusters") + ylab("R0")
+```
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world$id <- world$iso_a3
+
+dat$R0fit <- ifelse(dat$Clusters == "tracing", eff$fit[1],
+                    ifelse(dat$Clusters == "restriction_tracing", eff$fit[2],
+                           ifelse(dat$Clusters == "testing", eff$fit[3],
+                                  ifelse(dat$Clusters == "all", eff$fit[4],eff$fit[5]))))
+datMap <- dat %>% filter(date == "15-02-2020")
+
+datMap <- left_join(world, dat[,c("id","R0fit")], by="id")
+datMap$R0fit <- as.factor(datMap$R0fit)
+datMap$R0fit <- recode_factor(datMap$R0fit, "1.39317567222177" = "Tracing_Testing_1_39",
+                              "2.09680419720344" = "All_2_1",
+                              "2.29670265012321" = "Restriction_Tracing_2_3",
+                              "2.65766476793349" = "Testing_2_65",
+                              "3.47023144232237" = "Tracing_3_47")
+ggplot(data = datMap) + geom_sf(aes(fill = R0fit)) + scale_color_ordinal()
+
 ```
 

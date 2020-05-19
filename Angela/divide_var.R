@@ -10,13 +10,13 @@
 var_LD <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions",
          "transport_closing", "stay_home_restrictions", "internal_movement_restrictions")
 var_FIX <- c("pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
-             "gdp")
+             "gdp", "health_exp", "health_exp_oop")
 
 var_EC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief", "ox.E3_Fiscal.measures",
             "ox.E4_International.support", "mkt_close", "mkt_volume")
 
 var_HS <- c("ox.H4_Emergency.investment.in.healthcare",
-           "ox.H5_Investment.in.vaccines", "health_exp", "health_exp_oop")
+           "ox.H5_Investment.in.vaccines")
 
 index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index", "R0")
 #Changes for each day are compared to a baseline value for that day of the week.
