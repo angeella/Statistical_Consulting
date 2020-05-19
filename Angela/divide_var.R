@@ -8,7 +8,8 @@
 #7. COVID
 
 var_LD <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions",
-         "transport_closing", "stay_home_restrictions", "internal_movement_restrictions")
+         "transport_closing", "stay_home_restrictions", "internal_movement_restrictions",
+         "contact_tracing", "testing_policy")
 var_FIX <- c("pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
              "gdp", "health_exp", "health_exp_oop")
 
@@ -29,11 +30,7 @@ var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_
 var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical", "hosp",
                "vent", "icu")
 
-policies <- c("school_closing","workplace_closing","cancel_events", "gatherings_restrictions",
-              "transport_closing","stay_home_restrictions","internal_movement_restrictions",
-              "international_movement_restrictions","information_campaigns","testing_policy","contact_tracing")
-
-save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID, policies,file = "Angela/Data/var.RData")
+save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
 
 ##Plus obviously country (id) and date
 

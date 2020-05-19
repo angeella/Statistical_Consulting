@@ -23,7 +23,10 @@ library(cAIC4)
 library(sjPlot)
 library(sjmisc)
 library(coefplot2)
-
+library(MuMIn)
+library(HLMdiag)
+library(glmmTMB)
+library(gridExtra)
 # per mappe...
 require(maps)
 require(rnaturalearth)
