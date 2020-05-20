@@ -2,8 +2,11 @@
 require(COVID19)
 require(dplyr)
 require(ggplot2)
+require(rnaturalearth)
+require(rnaturalearthdata)
 require(tidyr)
 require(sf)
+load("Michele/lib/maps.R")
 load("Michele/lib/maps/regio.RData")
 source("Michele/lib/lagdata.R")
 source("Michele/lib/long2wide.R")
@@ -15,15 +18,21 @@ source("Michele/lib/mobility.R")
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")[-1]
 
 mapdata <- mapdata %>%
-  mutate(tipo=ifelse(is.bin, "raccoglitori", ifelse(civic, "province", ifelse(regional, "regioni", "stati"))))
+  mutate(type=ifelse(is.bin, "bin", ifelse(civic, "provinces", ifelse(regional, "regions", "countries"))))
 
-png("Michele/plots/mappaall.png", width = 20, height = 15, units = "cm", res=200)
+# png("Michele/plots/mappaall.png", width = 20, height = 15, units = "cm", res=200, bg = "transparent")
 mapdata %>%
   filter(finest) %>%
   ggplot() +
-  geom_sf(aes(fill=tipo), lwd=0.5, color="black") +
-  scale_fill_manual(values=cbPalette)
-dev.off()
+  geom_sf(aes(fill=type), lwd=0.5, color="black") +
+  scale_fill_manual(values=cbPalette) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+# dev.off()
 
 dat <- bind_rows(
   covid19(ISO = mapdata$id[mapdata$national], level = 1)
@@ -36,11 +45,50 @@ dat <- bind_rows(
   csse() %>%
   mobility()
 
+require(scales)
+# png("Michele/plots/michelediscrepancies2.png", width = 20, height = 15, units = "cm", res=200, bg = "transparent")
+dat %>%
+  filter(id %>%
+           sub(pattern = ",.*", replacement = "") %in%
+           c("GBR", "CHE")) %>%
+  group_by(country, date) %>%
+  mutate(confirmed.reg=sum(ifelse(is.na(state),0,confirmed), na.rm = T),
+         confirmed.naz=sum(ifelse(!is.na(state),0,confirmed), na.rm = T)) %>%
+  select(country, date, confirmed.naz, confirmed.reg) %>%
+  filter(confirmed.naz > 1000) %>%
+  ggplot() +
+  geom_abline(intercept = 1, slope = 0) +
+  geom_line(aes(x=confirmed.naz, y=confirmed.reg/confirmed.naz, group=country, color=country), lwd=1.5) +
+  scale_y_continuous(limit=c(0,2.5), labels = function(x) paste0(x, "x")) +
+  scale_x_continuous(trans = log10_trans(),
+                     breaks = trans_breaks("log10", function(x) 10^x),
+                     labels = trans_format("log10", math_format(10^.x))) +
+  xlab("national") +
+  ylab("regional over national") +
+  theme(plot.background = element_rect(fill = "transparent", colour = NA)) +
+  labs(color="confirmed\ncases")
+# dev.off()
+
 dat <- dat %>%
   mutate(
     active=confirmed - deaths - recovered,
     ox.active=ox.confirmed - ox.deaths - ox.recovered
   )
+
+# png("Michele/plots/actoverpop.png", width = 20, height = 15, units = "cm", res=200, bg = "transparent")
+dat %>% filter(national & (id %in% dat$id[dat$confirmed>1000]) & (id %in% dat$id[dat$pop>6000000]), date >= "2020-03-01") %>%
+  ggplot() +
+  geom_tile(aes(x=date, y=id, fill=1000*active/pop), color="black") +
+  scale_fill_gradientn(colors=c("#008000", "#2dc937", "#e7b416", "#db7b2b", "#cc3232"), limits=c(0, 3)) +
+  scale_x_date(date_labels = "%b %d") +
+  xlab("") + ylab("") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.ticks.y.left = element_blank(),
+        axis.text = element_text(size=10),
+        plot.background = element_rect(fill = "transparent", colour = NA)) +
+  labs(fill = "active\ncases\nin 1K\npeople\n") +
+  ggtitle("")
+# dev.off()
 
 dat %>%
   filter(abs(active-ox.active) > 0.1*pmax(abs(active), abs(ox.active))) %>%
@@ -68,7 +116,7 @@ dat %>% filter(national) %>%
 
 dat %>% filter(national) %>% ggplot() + geom_tile(aes(x=date, y=id, fill=C1_School.closing %>% ordered())) + ggtitle("Oxford data")# + theme(legend.position = "none")
 
-png("Michele/plots/scuole.png", width = 20, height = 15, units = "cm", res=200)
+# png("Michele/plots/scuole.png", width = 20, height = 15.1, units = "cm", res=200)
 dat %>%
   filter(national) %>%
   ggplot() +
@@ -80,7 +128,7 @@ dat %>%
   theme(legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.ticks.y.left = element_blank(), axis.text = element_text(size=10)) +
   ggtitle("")
-dev.off()
+# dev.off()
 
 # dat %>% filter(national) %>% left_join(mapdata, by="id") %>%
 #   st_as_sf() %>%
@@ -110,8 +158,23 @@ sapply(policies, function(pol) {
   )
 })
 
-dat %>% filter(!is.na(cases.active.reg)) %>% ggplot() +
-  geom_path(aes(group=id, x=cases.active, y=cases.active.reg, color=country))
+require(viridis)
+require(scales)
+# png("Michele/plots/discrepanze.png", width = 20, height = 15, units = "cm", res=200)
+dat %>% filter(!is.na(cases.active.reg) & !(id %in% c("ITA", "CHE")) & (cases.active > 10)) %>% ggplot() +
+  geom_line(aes(group=id, x=cases.active, y=(cases.active.reg-cases.active)/cases.active, color=id), lty=5, lwd=1) +
+  scale_color_viridis(discrete = TRUE, option = "D") +
+  scale_x_continuous(trans = log10_trans(),
+                     breaks = trans_breaks("log10", function(x) 10^x),
+                     labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_continuous(labels = function(x) paste0(x, "x")) +
+  ggtitle("casi attivi") +
+  xlab("nazionali") +
+  ylab("regionali - nazionali") +
+  theme(axis.text = element_text(size=10), legend.title = element_blank())
+# dev.off()
+
+
 
 sma <- function(y, k) {
   if (k <= 1) {
@@ -127,16 +190,16 @@ sapply(policies, function(pol) {
           ggtitle(pol))
 })
 
-cl <- dat %>% filter(national) %>% long2wide(id="id", time="date", vars="stringency_index")
-rownames(cl) <- cl$id
-cl$id <- NULL
-cl <- cl %>% dist() %>% hclust(method = "complete")
-cl <- list(order=cl$labels[cl$order])
-cl$todo <- dat$id %>% unique()
-
-dat$id <- dat$id %>% factor(levels=sapply(cl$order, function(v) {
-  cl$todo[grepl(v, cl$todo)]
-}) %>% unlist() %>% as.vector())
+# cl <- dat %>% filter(national) %>% long2wide(id="id", time="date", vars="stringency_index")
+# rownames(cl) <- cl$id
+# cl$id <- NULL
+# cl <- cl %>% dist() %>% hclust(method = "complete")
+# cl <- list(order=cl$labels[cl$order])
+# cl$todo <- dat$id %>% unique()
+# 
+# dat$id <- dat$id %>% factor(levels=sapply(cl$order, function(v) {
+#   cl$todo[grepl(v, cl$todo)]
+# }) %>% unlist() %>% as.vector())
 
 sapply(policies, function(pol) {
   print(dat %>% filter(T) %>% ggplot() +
@@ -177,24 +240,34 @@ dat <- dat %>% replace_na(aux %>% paste0(".lag1") %>% sapply(function(v) 0) %>% 
 # qui calcolo effettivamente le variazioni
 dat <- aux %>% lagdata(dataset = dat, save.lag = F, save.var = T)
 
-all(dat$stringency_index.var1 == dat %>% group_by(id.country, state) %>% mutate(stringency_index.lag1alt=lag(stringency_index, 1) %>% replace_na(0)) %>% mutate(stringency_index.var1alt=stringency_index-stringency_index.lag1alt) %>% ungroup() %>% select("stringency_index.var1alt") %>% as.data.frame() %>% as.matrix() %>% as.vector())
+all(dat$stringency_index.var1 == dat %>%
+      group_by(country, state) %>%
+      mutate(stringency_index.lag1alt=lag(stringency_index, 1) %>%
+               replace_na(0)
+              ) %>%
+      mutate(stringency_index.var1alt=stringency_index-stringency_index.lag1alt) %>%
+      ungroup() %>%
+      select("stringency_index.var1alt") %>%
+      as.data.frame() %>%
+      as.matrix() %>%
+      as.vector())
 
 # smusso la serie storica degli index, i dati sono già ordinati
-dat <- dat %>% group_by(id.country, state) %>%
+dat <- dat %>% group_by(country, state) %>%
   mutate(stringency_index_smooth=loess(stringency_index ~ as.numeric(date)) %>% predict()) %>% as.data.frame()
 
 # calcolo i casi attivi
-dat <- dat %>% group_by(id.country, state) %>%
+dat <- dat %>% group_by(country, state) %>%
   mutate(cases.active=cumsum(confirmed.var1-deaths.var1-recovered.var1)) %>%
   mutate(cases.active_smooth=loess(cases.active ~ as.numeric(date)) %>% predict()) %>% as.data.frame()
 
 
 
-dat2 <- dat %>% filter(is.na(state)) %>% long2wide(id = "id.country", time = "date", vars = "stringency_index_smooth")
-rownames(dat2) <- dat2$id.country
+dat2 <- dat %>% filter(is.na(state)) %>% long2wide(id = "id", time = "date", vars = "stringency_index_smooth")
+rownames(dat2) <- dat2$id
 cl <- dat2[,colnames(dat2) %>% grepl(pattern = "\\d+-\\d+-\\d+")] %>% dist() %>% hclust(method = "ward.D2")
 cl %>% plot(hang=-1, cex=0.5)
-dat2 <- data.frame(id.country=dat2$id.country, meanindex=dat2[,colnames(dat2) %>% grepl(pattern = "\\d+-\\d+-\\d+")] %>% rowSums(na.rm = T))
+dat2 <- data.frame(id=dat2$id, meanindex=dat2[,colnames(dat2) %>% grepl(pattern = "\\d+-\\d+-\\d+")] %>% rowSums(na.rm = T))
 for (p in 2:10) {
   dat2$cl <- cl %>% cutree(k=p)
   dat2$cl <- dat2 %>% group_by(cl=cl) %>% summarise(meanindex=mean(meanindex)) %>% mutate(cl2=order(meanindex)) %>% right_join(dat2, by="cl") %>% select("cl2") %>% as.matrix() %>% drop() %>% as.ordered()
