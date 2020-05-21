@@ -63,8 +63,8 @@ map %>%
   ggplot() +
   geom_sf() +
   geom_point(data=dat, aes(x=longitude, y=latitude, color=administrative_area_level)) +
-  xlim(-20, 20) +
-  ylim(35, 70)
+  xlim(-15, 20) +
+  ylim(35, 65)
 
 dat <- dat %>%
   left_join(
@@ -77,6 +77,9 @@ dat <- dat %>%
   mutate(
     date2 = date - datestart
   )
+
+dat <- dat %>%
+  filter(administrative_area_level==1 | country=="Italy")
 
 dat <- dat %>%
   group_by(id) %>%
@@ -107,24 +110,60 @@ bulkdata %>%
   ggplot() +
   geom_point(aes(y=zeroes, x=log10(pop), color=country, size=region=="country"))
 
+require(ggplot2)
+
+# da tenere
 dat %>%
-  filter(country=="Belgium") %>%
+  filter(administrative_area_level==2 & country=="Italy") %>%
   ggplot() +
-  geom_tile(aes(x=date, y=region, fill=confis.diff > 0))
+  geom_line(aes(x=date, y=log10(active), group=region)) +
+  scale_x_date(date_labels = "%b %d") +
+  geom_vline(xintercept = as.Date(c("2020-03-10", "2020-05-04")) + 10)
 
-bulkdata %>%
+require(lme4)
+require(boot)
+
+dat <- dat %>%
+  filter(administrative_area_level==2 & country=="Italy") %>%
+  arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(
+    active.lag1=lag(active,1),
+    active.lag10=lag(active,10),
+    active.lag14=lag(active,14)
+  ) %>%
+  mutate(
+    myoffset=boot::logit((active.lag10+0.5)/(population+1)),
+    phase=factor((date-10 >= "2020-03-10") + (date-10 >= "2020-05-04"))
+  )
+
+model1 <- glm(
+  cbind(active, population - active) ~
+    offset(myoffset) +
+    region +
+    # log(population) +
+    log(tests + 1) +
+    lag(log(tests + 1),10) +
+    phase,
+  family = binomial(link = "logit"),
+  data=dat)
+
+require(effects)
+
+data.frame(effect("phase", model1))
+
+data.frame(effect("region", model1)) %>%
+  left_join(dat %>% filter(date=="2020-04-15"), by="region") %>%
   ggplot() +
-  geom_point(aes(x=zeroes, y=sqrt(all.var)/all.avg, color=log(pop.avg)))
+  geom_point(aes(x=longitude, y=latitude, color=fit), size=10) 
 
-require(glmmTMB)
+summary(model1)
 
-dat$logodd <- with(dat, log(active/(population-active)))
-
-model <- glmmTMB(
-  log(confirmed + 1) - lag(log(confirmed + 1),14) ~ log(population) + ar1(date2|id),
-  data = dat,
-  family = gaussian()
-)
-
-summary(model)
+# model <- glmmTMB(
+#   log(confirmed + 1) - lag(log(confirmed + 1),14) ~ log(population) + ar1(date2|id),
+#   data = dat,
+#   family = gaussian()
+# )
+# 
+# summary(model)
         
