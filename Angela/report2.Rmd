@@ -1,0 +1,377 @@
+---
+title: "Second Report"
+author: "Angela Andreella"
+date: "21/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+#load package
+source("Angela/packages.R")
+
+#load variables
+load("Angela/Data/var.RData")
+
+#load data
+load("Data/db_with_R0.RData")
+
+dat <- df
+#add Cluster Silvia aligned
+
+uno <- c("KOR", "SGP")
+due <- c("DEU", "SWE")
+tre <- c("CAN", "GRC", "PRT"," USA")
+quattro <- c("ESP", "GBR", "IRL", "ITA", "NLD")
+cinque <- c("AUT", "BEL", "CHE", "DNK", "FIN", "FRA", "NOR")
+states_to_sel <- c(uno,due,tre,quattro,cinque)
+
+datA <- dat %>% filter(id %in% states_to_sel)
+
+datA$Clusters <- ifelse(datA$id %in% uno, "Cl1", 
+                        ifelse(datA$id %in% due, "Cl2", 
+                               ifelse(datA$id %in% tre, "Cl3", 
+                                      ifelse(datA$id %in% quattro, "Cl4", 
+                                             "Cl5"))))
+dat <- datA
+
+#Some steps 
+dat$Clusters <- factor(dat$Clusters)
+
+dat_shape <- dat %>%
+  left_join(dat %>%
+              filter(confirmed >= 1) %>%
+              group_by(id) %>%
+              summarise(date.start=min(date)),
+            by="id") %>%
+  mutate(date2=date-date.start) %>%
+  as.data.frame()
+
+dat_shape <- add_R0_ML(dat_shape)
+
+dat_shape <- 
+  dat_shape %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(R0_lag = dplyr::lag(R0, n = 14, default = NA))
+dat_shape <- 
+  dat_shape %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(confirmed_lag = dplyr::lag(confirmed, n = 14, default = NA))
+dat_shape <- 
+  dat_shape %>% 
+  group_by(id) %>%
+  mutate(confirmed_cum = cumsum(confirmed_lag,na.rm = TRUE), pop_cum = cumsum(pop, na.rm = TRUE))
+dat_shape <- 
+  dat_shape %>% 
+  group_by(id) %>%
+  mutate(confirmed_prop = confirmed_cum/pop_cum)
+```
+
+# Motivation
+
+So, the aim is to understand how the lockdown policies influences the contagions. We consider the aligned data respect to the first confirmed case, we have the following situation:
+
+```{r}
+a<-dat_shape %>% ggplot(aes(x=date, y=confirmed_prop, group=Clusters, color=Clusters)) + geom_smooth()
+
+ggplotly(a)
+```
+
+Also, we lag the number of confirmed respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on number of confirmed at time $t+14$, in order to make a correct impact.
+
+```{r}
+pca_EC <- polychoric(dat_shape[,var_EC[1:2]])
+matPCA_ec <- cbind(rep(0,2),pca_EC$tau)
+dat_shape$ox.E1_Income.support_f <- as.factor(dat_shape$ox.E1_Income.support)
+dat_shape$ox.E1_Income.support_f <- recode_factor(dat_shape$ox.E1_Income.support_f,
+                                                  "0" = paste0(matPCA_ec[1,1]),
+                                                  "1" = paste0(matPCA_ec[1,2]),
+                                                  "2" = paste0(matPCA_ec[1,3]))
+
+dat_shape$ox.E1_Income.support_f <- as.numeric(dat_shape$ox.E1_Income.support_f)
+dat_shape$ox.E2_Debt.contract.relief_f <- as.factor(dat_shape$ox.E2_Debt.contract.relief)
+dat_shape$ox.E2_Debt.contract.relief_f <- recode_factor(dat_shape$ox.E2_Debt.contract.relief_f,
+                                                        "0" = paste0(matPCA_ec[2,1]),
+                                                        "1" = paste0(matPCA_ec[2,2]),
+                                                        "2" = paste0(matPCA_ec[2,3]))
+dat_shape$ox.E2_Debt.contract.relief_f <- as.numeric(dat_shape$ox.E2_Debt.contract.relief_f)
+dat_shape$ox.E3_Fiscal.measures_log <- log(dat_shape$ox.E3_Fiscal.measures +1)
+dat_shape$ox.E4_International.support <- ifelse(is.na(dat$ox.E4_International.support), 0, dat_shape$ox.E4_International.support)
+dat_shape$ox.E4_International.support_log <- log(dat_shape$ox.E4_International.support +1)
+dat_shape$pop_log <- log(dat_shape$pop +1)
+pca_age <- princomp(na.omit(dat_shape[,var_FIX[2:3]]), cor = TRUE)
+dat_shape$pca_age <- predict(pca_age,newdata = dat_shape[,var_FIX[2:3]])[,1]
+dat_shape$pop_density_log <- log(dat_shape$pop_density + 1)
+dat_shape$pop_death_rate_1000 <- dat_shape$pop_death_rate * 1000
+dat_shape$gdp_log <- log(dat_shape$gdp + 1)
+pca_hs <- princomp(na.omit(dat_shape[,var_HS]), cor = TRUE)
+dat_shape$pca_hs <- predict(pca_hs,newdata = dat_shape[,var_HS])[,1]
+dat_shape$school_closingF <- as.factor(dat_shape$school_closing)
+dat_shape$cancel_eventsF <- as.factor(dat_shape$cancel_events)
+dat_shape$gatherings_restrictionsF <- as.factor(dat_shape$gatherings_restrictions)
+dat_shape$transport_closingF <- as.factor(dat_shape$transport_closing)
+dat_shape$stay_home_restrictionsF <- as.factor(dat_shape$stay_home_restrictions)
+dat_shape$workplace_closingF <- as.factor(dat_shape$workplace_closing)
+dat_shape$internal_movement_restrictionsF <- as.factor(dat_shape$internal_movement_restrictions)
+dat_shape$testing_policyF <- as.factor(dat_shape$testing_policy)
+dat_shape$contact_tracingF <- as.factor(dat_shape$contact_tracing)
+```
+
+```{r}
+var_EC <- c("ox.E1_Income.support_f","ox.E2_Debt.contract.relief_f", var_EC[5:6], "ox.E3_Fiscal.measures_log", "ox.E4_International.support_log")
+
+var_FIX <- c("pca_age", "pop_log", "pop_density_log", "hosp_beds", "pop_death_rate_1000", "gdp_log", "health_exp")
+
+var_HS <- "pca_hs"
+
+var_LD <- c("school_closingF","workplace_closingF","cancel_eventsF",
+            "gatherings_restrictionsF","transport_closingF","stay_home_restrictionsF",
+            "internal_movement_restrictionsF","testing_policyF","contact_tracingF")
+```
+
+So, we plot the correlation matrix of the variables that we will consider for the model:
+
+```{r}
+cormat <- round(cor(dat_shape[,c(var_EC, "confirmed_prop", var_FIX, var_HS)],use = "na.or.complete"),6)
+dat_cor <- melt(cormat)
+
+p <- ggplot(data = dat_cor, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+
+ggplotly(p)
+
+```
+
+
+# Model
+
+```{r}
+ICCest(date2, confirmed_prop, dat_shape) #0.2833282
+ICCest(id, confirmed_prop, dat_shape) #0.09110691
+ICCest(Clusters, confirmed_prop, dat_shape) #0.03790068
+```
+
+Plot to understand the variability respect date
+
+```{r}
+abc<-aggregate(confirmed_prop ~date2, dat_shape, mean)
+bdata <- dat_shape
+bdata <- merge(bdata,abc,by="date2")
+bdata$colorBox <- ifelse(bdata$confirmed_prop.y>= mean(na.omit(bdata$confirmed_prop.x)), "#56B4E9", "#009E73")
+
+bdata$date2 <- as.factor(bdata$date2)
+ggplot(bdata, aes(x=date2, y=confirmed_prop.x, fill = colorBox)) +
+    geom_boxplot() +
+  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
+```
+and respect Clusters:
+
+```{r}
+abc<-aggregate(confirmed_prop ~Clusters, dat_shape, mean)
+bdata <- dat_shape
+bdata <- merge(bdata,abc,by="Clusters")
+bdata$colorBox <- ifelse(bdata$confirmed_prop.y>= mean(na.omit(bdata$confirmed_prop.x)), "#56B4E9", "#009E73")
+
+bdata$Clusters <- as.factor(bdata$Clusters)
+ggplot(bdata, aes(x=Clusters, y=confirmed_prop.x, fill = colorBox)) +
+    geom_boxplot() +
+  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
+```
+
+and id:
+
+```{r}
+abc<-aggregate(confirmed_prop ~id, dat_shape, mean)
+bdata <- dat_shape
+bdata <- merge(bdata,abc,by="id")
+bdata$colorBox <- ifelse(bdata$confirmed_prop.y>= mean(na.omit(bdata$confirmed_prop.x)), "#56B4E9", "#009E73")
+
+bdata$id <- as.factor(bdata$id)
+ggplot(bdata, aes(x=id, y=confirmed_prop.x, fill = colorBox)) +
+    geom_boxplot() +
+  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
+```
+
+## Model
+
+```{r}
+f <- as.formula(paste("confirmed_prop", "~", paste(c(var_EC), collapse=" + "), 
+                     "+", paste(c(var_FIX), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                   #   "+", "Clusters",
+                     "+", paste(c(var_LD), collapse=" + "),
+                      "+ date2 + Clusters"))
+
+model <- glm(f, data = dat_shape,family = quasibinomial(link = "logit"))
+summary(model)
+MuMIn::r.squaredGLMM(model)
+#           R2m       R2c
+#[1,] 0.2796572 0.7935903
+plot(model)
+```
+
+```{r}
+comparison <- c("Cl1 - Cl2 = 0",
+                "Cl1 - Cl3 = 0",
+                "Cl1 - Cl4 = 0",
+                "Cl1 - Cl5 = 0",
+                "Cl2 - Cl3 = 0",
+                "Cl2 - Cl4 = 0",
+                "Cl2 - Cl5 = 0",
+                "Cl3 - Cl4 = 0",
+                "Cl3 - Cl5 = 0",
+                "Cl4 - Cl5 = 0")
+test<-multcomp::glht(model, linfct = mcp(Clusters = comparison),adjusted="holm")
+summary(test)
+# > uno
+# [1] KOR SGP
+# > due
+# [1] DEU SWE
+
+# > tre
+# [1] CAN GRC PRT USA
+
+# > quattro
+# [1] ESP GBR IRL ITA NLD
+
+# > cinque
+# [1] AUT BEL CHE DNK FIN FRA NOR
+```
+
+## Model separati per Cluster Scarpa
+
+```{r}
+uno <- c("ITA", "FRA")
+due <- c("KOR" ,"SGP")
+tre <- c( "DEU" ,"SWE")
+dat_shape <- dat_shape %>% mutate(id_f = as.factor(id))
+dat_shapeScarpa <- dat_shape %>% filter(id %in% c(uno,due,tre)) 
+dat_shapeScarpa1 <- dat_shape %>% filter(id %in% uno)
+dat_shapeScarpa2 <- dat_shape %>% filter(id %in% due)
+dat_shapeScarpa3 <- dat_shape %>% filter(id %in% tre)
+
+f <- as.formula(paste("confirmed_prop", "~", paste(c(var_EC[c(1,4)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[7]), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                   #   "+", "Clusters",
+                     "+", paste(c(var_LD[c(1,2,3,5,6,7,8)]), collapse=" + "),
+                      "+ date2 + id"))
+
+dat_shapeScarpa1$testing_policyF <- recode_factor(dat_shapeScarpa1$testing_policyF,
+                                                  "0" = "A",
+                                                  "1" = "B",
+                                                  "2" = "C",
+                                                  "3" = "D")
+model <- glm(f, data = dat_shapeScarpa1,family = quasibinomial(link = "logit"))
+summary(model)
+MuMIn::r.squaredGLMM(model)
+#           R2m       R2c
+#[1,] 0.2796572 0.7935903
+plot(model)
+```
+
+```{r}
+comparison <- c("A - B = 0",
+                "A - C = 0",
+                "B - C = 0")
+test<-multcomp::glht(model, linfct = mcp(testing_policyF = comparison),adjusted="holm")
+summary(test)
+```
+
+```{r}
+
+f <- as.formula(paste("confirmed_prop", "~", paste(c(var_EC[c(1,4)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[7]), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                   #   "+", "Clusters",
+                     "+", paste(c(var_LD[c(1,2,3,5,6,7,8)]), collapse=" + "),
+                      "+ date2 + id"))
+
+dat_shapeScarpa1$testing_policyF <- recode_factor(dat_shapeScarpa1$testing_policyF,
+                                                  "0" = "A",
+                                                  "1" = "B",
+                                                  "2" = "C",
+                                                  "3" = "D")
+model <- glm(f, data = dat_shapeScarpa2,family = quasibinomial(link = "logit"))
+summary(model)
+MuMIn::r.squaredGLMM(model)
+#           R2m       R2c
+#[1,] 0.2796572 0.7935903
+plot(model)
+```
+
+```{r}
+comparison <- c("A - B = 0",
+                "A - C = 0",
+                "B - C = 0")
+test<-multcomp::glht(model, linfct = mcp(testing_policyF = comparison),adjusted="holm")
+summary(test)
+```
+```{r}
+
+f <- as.formula(paste("confirmed_prop", "~", paste(c(var_EC[c(1,4)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[7]), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                   #   "+", "Clusters",
+                     "+", paste(c(var_LD[c(1,2,3,5,6,7,8)]), collapse=" + "),
+                      "+ date2 + id"))
+
+dat_shapeScarpa1$testing_policyF <- recode_factor(dat_shapeScarpa1$testing_policyF,
+                                                  "0" = "A",
+                                                  "1" = "B",
+                                                  "2" = "C",
+                                                  "3" = "D")
+model <- glm(f, data = dat_shapeScarpa3,family = quasibinomial(link = "logit"))
+summary(model)
+MuMIn::r.squaredGLMM(model)
+#           R2m       R2c
+#[1,] 0.2796572 0.7935903
+plot(model)
+```
+
+```{r}
+comparison <- c("A - B = 0",
+                "A - C = 0",
+                "B - C = 0")
+test<-multcomp::glht(model, linfct = mcp(testing_policyF = comparison),adjusted="holm")
+summary(test)
+```
+
+#Totale ma con Clusters 
+
+
+```{r}
+dat_shapeScarpa$Clusters <- ifelse(dat_shapeScarpa$id %in% uno, "Cl1",
+                                   ifelse(dat_shapeScarpa$id %in% due, "Cl2","Cl3"))
+
+
+dat_shapeScarpa$Clusters <- as.factor(dat_shapeScarpa$Clusters)
+f <- as.formula(paste("confirmed_prop", "~", paste(c(var_EC[c(1,4)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[7]), collapse=" + "),
+                      "+", paste(c(var_HS), collapse=" + "),
+                     "+", "Clusters",
+                     "+", paste(c(var_LD[c(1,2,3,5,6,7,8)]), collapse=" + "),
+                      "+ date2"))
+
+model <- glm(f, data = dat_shapeScarpa,family = quasibinomial(link = "logit"))
+summary(model)
+MuMIn::r.squaredGLMM(model)
+#           R2m       R2c
+#[1,] 0.2796572 0.7935903
+plot(model)
+```
+
+```{r}
+comparison <- c("Cl1 - Cl2 = 0",
+                "Cl1 - Cl3 = 0",
+                "Cl2 - Cl3 = 0")
+test<-multcomp::glht(model, linfct = mcp(Clusters = comparison),adjusted="holm")
+summary(test)
+```
+
+
