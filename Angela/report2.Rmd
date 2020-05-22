@@ -250,7 +250,7 @@ rsq(model,adj=TRUE)
 con PCA?
 
 ```{r}
-W <- polychoric(dat[,policies])
+W <- polychoric(dat[,var_LD])
 W$rho
 p3 <- principal(r = W$rho, nfactors = 6) 
 p3$loadings #prime 3 componenti
