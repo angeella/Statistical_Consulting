@@ -56,7 +56,9 @@ dat <- bind_rows(
     hosp.future=Hmisc::Lag(hosp,-14),
     vent.future=Hmisc::Lag(vent,-14),
     icu.future=Hmisc::Lag(icu,-14),
-    tests.future=Hmisc::Lag(tests,-14)
+    tests.future=Hmisc::Lag(tests,-14),
+    tests.futurenear=Hmisc::Lag(tests,-7),
+    tests.past=Hmisc::Lag(tests,14)
   ) %>%
   as.data.frame() %>%
   calc.phases() %>%
@@ -80,37 +82,35 @@ dat <- dat %>%
   ) %>%
   mutate(denspop=population/areakm2)
 
-colnames(dat)
+f.def <- active.future ~
+  offset(log(0.5 + active)) +
+  phase +
+  (phase + 1|region) +
+  log(population) +
+  log(tests - tests.past + 0.5) +
+  log(tests.future - tests + 0.5) +
+  (1 | date) +
+  log(denspop)
 
 model <- glmmTMB(
-  active.future ~
-    offset(log(0.5 + active)) +
-    # school_closing +
-    # workplace_closing +
-    # cancel_events +
-    # gatherings_restrictions +
-    # transport_closing +
-    # stay_home_restrictions +
-    # internal_movement_restrictions +
-    # international_movement_restrictions +
-    # information_campaigns +
-    # testing_policy +
-    # contact_tracing +
-    phase +
-    # country +
-    (phase-1|region) +
-    log(population) +
-    log(tests.new + 0.5) +
-    log(tests.new.future + 0.5) +
-    log(tests.future - tests + 0.5) +
-    log(denspop),
+  f.def,
   data = dat %>% filter(country=="Italy"),
   family = poisson()
 )
 
+require(performance)
 check_overdispersion(model)
 
 summary(model)
+
+pdf("Plots/graficoregionifinale.pdf")
+ranef(model)[[1]]$region %>%
+  mutate(region=rownames(.), country="Italy") %>%
+  left_join(map, by=c("country", "region")) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(aes(fill=phase))
+dev.off()
 
 est <- ranef(model)[[1]]$`region:country` %>%
   mutate(
