@@ -27,6 +27,13 @@ library(MuMIn)
 library(HLMdiag)
 library(glmmTMB)
 library(gridExtra)
+library(pscl)
+require(MASS)
+require(boot)
+library(NBZIMM)
+library(GLMMadaptive)
+library(ggeffects)
+
 # per mappe...
 require(maps)
 require(rnaturalearth)
