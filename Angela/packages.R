@@ -33,7 +33,8 @@ require(boot)
 library(NBZIMM)
 library(GLMMadaptive)
 library(ggeffects)
-
+library(directlabels)
+library(performance)
 # per mappe...
 require(maps)
 require(rnaturalearth)
