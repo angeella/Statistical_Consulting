@@ -29,7 +29,7 @@ dat <- df
 
 uno <- c("KOR", "SGP")
 due <- c("DEU", "SWE")
-tre <- c("CAN", "GRC", "PRT"," USA")
+tre <- c("CAN", "GRC", "PRT","USA")
 quattro <- c("ESP", "GBR", "IRL", "ITA", "NLD")
 cinque <- c("AUT", "BEL", "CHE", "DNK", "FIN", "FRA", "NOR")
 states_to_sel <- c(uno,due,tre,quattro,cinque)
@@ -75,7 +75,7 @@ dat_shape <-
 So, the aim is to understand how the lockdown policies influences the contagions. We consider the aligned data respect to the first confirmed case, we have the following situation:
 
 ```{r}
-a<-dat_shape %>% ggplot(aes(x=date, y=confirmed_prop, group=Clusters, color=Clusters)) + geom_smooth()
+a<-dat_shape %>% ggplot(aes(x=date2, y=confirmed_prop, group=Clusters, color=Clusters)) + geom_smooth()
 
 ggplotly(a)
 ```
@@ -204,32 +204,257 @@ ggplot(dat_shape, aes(confirmed, fill = Clusters)) +
   facet_grid(Clusters ~ ., margins=TRUE, scales="free_y")
 ```
 
-Zero inflated
+Zero-Inflated Mixed Models
 
 ```{r}
 dat_shape <- calc.phases(dat_shape)
 ```
 
 
+```{r}
+
+dat_shape$EPOCH <- ifelse(dat_shape$date2 <= 0, "First", "Second")
+dat_shape$EPOCH <- as.factor(dat_shape$EPOCH)
+dat_shape$EPOCH <- ifelse(dat_shape$date <= "2020-03-01", "First", "Second")
+dat_shape$EPOCH <- as.factor(dat_shape$EPOCH)
+f <- as.formula(paste("confirmed_lag", "~", 
+                      paste(c(var_EC[1]), collapse=" + "), 
+                     "+", paste(c(var_FIX[c(1,3,4,5,6,7)]), collapse=" + "),
+                   #   "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ Clusters | pop"))
+
+f <- as.formula(paste("log(confirmed_lag + 1)", "~", 
+                      paste(c(var_EC[c(3)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[c(6)]), collapse=" + "),
+                    #  "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD[c(4:9)]),collapse=" + "),
+                      "+ offset(log(pop)) + (1|id/Clusters) + (1|date2/EPOCH)"))
+m1 <- pscl::zeroinfl(f, data = dat_shape, dist = "negbin")
+
+f <- as.formula(paste("confirmed_lag", "~", 
+                   #   paste(c(var_EC[c(4)]), collapse=" + "), 
+                   #  "+", paste(c(var_FIX[c(1,3,4,5,6,7)]), collapse=" + "),
+                   #   "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ offset(log(pop)) + Clusters"))
+f5 = glmmTMB(f, family = "zig", random = ~ 1|EPOCH,data = dat_shape)
+
+summary(f5)
+```
+
 
 ```{r}
-f <- as.formula(paste("confirmed_lag", "~", 
-                      #paste(c(var_EC[1:2]), collapse=" + "), 
-                    # "+", paste(c(var_FIX), collapse=" + "),
+f <- as.formula(paste("log(confirmed_lag + 1)", "~", 
+                      paste(c(var_EC[c(3)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[c(6,7)]), collapse=" + "),
                       "+", paste(c(var_HS), collapse=" + "),
                      "+", paste(c(var_LD),collapse=" + "),
-                      "+ phase + Clusters | pop"))
+                      "+ offset(log(pop)) + (1|id/Clusters) + (1|date2)"))
+model <- glmer(f, data = dat_shape,family = quasipoisson,na.action = na.omit)
+summary(model)
+rsq(model,adj=TRUE)
+```
 
-m1 <- pscl::zeroinfl(f, data = dat_shape, dist = "negbin")
-summary(m1)
+
+con PCA?
+
+```{r}
+dat_shape %>% ggplot(aes(x=date2, y=pca_LD, group=Clusters, color=Clusters)) + geom_smooth()
+
+policies <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions","transport_closing", "stay_home_restrictions", "internal_movement_restrictions")
+W <- polychoric(dat_shape[,policies])
+W$tau
+p3 <- principal(r = W$rho, nfactors = 6) 
+p3$loadings #prime 3 componenti
+cbind(policies, p3$loadings)
+
+scores <- as.matrix(dat_shape[,policies]) %*% p3$weights
+dat_shape$pca_LD <- scores[,1]
+
+dat_shape %>% ggplot(aes(x=date2, y=pca_LD, group=Clusters, color=Clusters)) + geom_smooth()
+
+```
+
+```{r}
+policiesEC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief")
+
+W <- polychoric(dat_shape[,policiesEC])
+W$tau
+p3 <- principal(r = W$rho, nfactors = 1) 
+p3$loadings #prime 3 componenti
+cbind(policies, p3$loadings)
+
+scores <- as.matrix(dat_shape[,policiesEC]) %*% p3$weights
+dat_shape$pca_EC <- scores[,1]
+
+dat_shape %>% ggplot(aes(x=date2, y=pca_EC, group=Clusters, color=Clusters)) + geom_smooth()
+
+```
+
+QUESTO!!!
+
+```{r}
+dat_shape$confirmed_count <- ave(dat_shape$confirmed, dat_shape$id, FUN=function(x) pmax(0, c(0, diff(x))))
+
+ggplot(data = dat_shape, aes(x=date, y=confirmed_count, group = Clusters)) + 
+  geom_smooth()
+
+ggplotly(p)
+
+dat_shape <- 
+  dat_shape %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(confirmed_count_lag = Hmisc::Lag(confirmed_count, shift  = -14))
+
+dat_shape$obs_effect <- 1:nrow(dat_shape)
+dat_shape$ox.E1_Income.support_f <- as.factor(dat_shape$ox.E1_Income.support_f)
+dat_shape$ox.E2_Debt.contract.relief_f <- as.factor(dat_shape$ox.E2_Debt.contract.relief_f)
+
+
+f <- as.formula(paste("confirmed_count_lag", "~", 
+                    #  paste(c(var_EC[c(3)]), collapse=" + "), 
+                     "+", paste(c(var_FIX[c(3,6)]), collapse=" + "),
+                     # "+", paste(c(var_HS[1]), collapse=" + "),
+                   # "+ log(ox.H4_Emergency.investment.in.healthcare +1)",
+                     "+", paste(c(var_LD[c(6,4,5,8:9)]),collapse=" + "),
+                      "+ offset(log(pop)) + pca_EC + Clusters + (1|id/Clusters) + (1|date2) + (1|obs_effect)"))
+
+model <- glmmTMB(f, data = dat_shape,family = poisson(link = "log"), 
+                 na.action = na.omit)
+summary(model)
+check_overdispersion(model)
+MuMIn::r.squaredGLMM(model,adj=TRUE)
+plot_model(model)
+pr<-ggpredict(model, "Clusters", type = "re")
+pr<-ggeffect(model, "Clusters", type = "re")
+
+pr1<-ggpredict(model, "id", type = "re")
+
+plot(pr1)
+```
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf") 
+world <- world %>% filter(iso_a3 %in% states_to_sel)
+world$id <- world$iso_a3 
+
+dat_shape$confFIT <- ifelse(dat_shape$Clusters == "Cl1", pr$predicted[1],
+                    ifelse(dat_shape$Clusters == "Cl2", pr$predicted[2],
+                           ifelse(dat_shape$Clusters == "Cl3", pr$predicted[3],
+                                  ifelse(dat_shape$Clusters == "Cl4", pr$predicted[4], pr$predicted[5]))))
+
+datMap <- left_join(world, dat_shape, by="id")
+
+ggplot(data = datMap) + geom_sf(aes(fill = confFIT))
+```
+
+
+PROVE DI MERDA QUI:
+
+
+#Clusters 1 Korea Singapore
+
+```{r}
+dat1 <- dat_shape %>% filter(id %in% uno)
+f <- as.formula(paste("confirmed_count_lag", "~", 
+                     # paste(c(var_EC[c(3)]), collapse=" + "), 
+                     #"+", paste(c(var_FIX[6]), collapse=" + "),
+                    #  "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ pca_LD + offset(log(pop))"))
+model <- glm(f, data = dat1,family = poisson(link = "log"), na.action = na.omit)
+summary(model)
+MuMIn::r.squaredGLMM(model,adj=TRUE)
+plot_model(model)
+```
+#Clusters 2 Korea "DEU" "SWE"
+
+```{r}
+dat2 <- dat_shape %>% filter(id %in% due)
+f <- as.formula(paste("confirmed_count_lag", "~", 
+                     # paste(c(var_EC[c(3)]), collapse=" + "), 
+                     #"+", paste(c(var_FIX[6]), collapse=" + "),
+                    #  "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ offset(log(pop)) + (1|date)"))
+model <- glmer(f, data = dat1,family = poisson(link = "log"), na.action = na.omit)
+summary(model)
+MuMIn::r.squaredGLMM(model,adj=TRUE)
+plot_model(model)
+```
+
+#Clusters 3 Korea "CAN"  "GRC"  "PRT"  " USA"
+
+```{r}
+dat3 <- dat_shape %>% filter(id %in% tre)
+f <- as.formula(paste("confirmed_count_lag", "~", 
+                     # paste(c(var_EC[c(3)]), collapse=" + "), 
+                     #"+", paste(c(var_FIX[6]), collapse=" + "),
+                    #  "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ offset(log(pop)) + (1|date)"))
+model <- glmer(f, data = dat1,family = poisson(link = "log"), na.action = na.omit)
+summary(model)
+MuMIn::r.squaredGLMM(model,adj=TRUE)
+plot_model(model)
+```
+
+```{r}
+comparison <- c("Cl1 - Cl2 = 0",
+                "Cl1 - Cl3 = 0",
+                "Cl1 - Cl4 = 0",
+                "Cl1 - Cl5 = 0",
+                "Cl2 - Cl3 = 0",
+                "Cl2 - Cl4 = 0",
+                "Cl2 - Cl5 = 0",
+               "Cl3 - Cl4 = 0",
+                "Cl3 - Cl5 = 0",
+                "Cl4 - Cl5 = 0")
+pairs(emmeans::emmeans(model, "Clusters"))
+
+test<-multcomp::glht(model, linfct = mcp(Clusters = comparison),adjusted="holm")
+summary(test)
 ```
 
 
 
 
+```{r}
+f <- as.formula(paste("log(confirmed_lag + 1)", "~", 
+                     # paste(c(var_EC[c(3)]), collapse=" + "), 
+                    # "+", paste(c(var_FIX[c(6,7)]), collapse=" + "),
+                    #  "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ offset(log(pop)) + Clusters"))
+fm <- mixed_model(fixed = f, random = ~ 1 | id/Clusters + 1|date2 , data = dat_shape,
+                  family = poisson())
+summary(fm)
+rsq(fm,adj=TRUE)
+```
+
+```{r}
+overdisp_fun <- function(model) {
+    rdf <- df.residual(model)
+    rp <- residuals(model,type="pearson")
+    Pearson.chisq <- sum(rp^2)
+    prat <- Pearson.chisq/rdf
+    pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+    c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
 
 
-
+f <- as.formula(paste("log(confirmed_lag + 1)", "~", 
+                   #   paste(c(var_EC[c(3)]), collapse=" + "), 
+                   #  "+", paste(c(var_FIX[c(6,7)]), collapse=" + "),
+                   #   "+", paste(c(var_HS), collapse=" + "),
+                     "+", paste(c(var_LD),collapse=" + "),
+                      "+ offset(log(pop)) + Clusters + (1|id/Clusters) + (1|date2)"))
+model <- glmer(f, data = dat_shape,family = poisson(link = "log"),na.action = na.omit)
+overdisp_fun(model)
+summary(model)
+rsq(model,adj=TRUE)
+```
 
 ```{r}
 f <- as.formula(paste("log(confirmed_lag+1)", "~", paste(c(var_EC), collapse=" + "), 
