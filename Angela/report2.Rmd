@@ -2,7 +2,10 @@
 title: "Second Report"
 author: "Angela Andreella"
 date: "21/05/2020"
-output: html_document
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
