@@ -23,11 +23,11 @@ dat <- #list(countries=
                    #ISO=c("ITA", "ESP", "FRA", "GBR","CHN", "IRL", "GRC", "ROU", 
                    #"RUS", "AUT", "PER", "ECU", "SAU", "NLD", "BEL", "USA", "TUR", 
                    #"IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "BRA", "SWE", "SGP", "KOR", "DEU"),
-                   start="2020-01-01") %>% as.data.frame()
+                   start="2020-01-01", end="2020-05-14") %>% as.data.frame()
 
-ISO=c("ITA", "ESP", "FRA", "GBR","CHN", "IRL", "GRC", "ROU", 
-      "RUS", "AUT", "SAU", "NLD", "BEL", "USA", "TUR", 
-      "IRN", "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "SWE", "SGP", "KOR", "DEU")
+ISO=c("ITA", "ESP", "FRA", "GBR", "IRL", "GRC",  
+     "AUT", "NLD", "BEL", "USA", 
+     "DNK", "FIN", "NOR", "PRT", "CAN", "CHE", "SWE", "SGP", "KOR", "DEU")
 
 
 #dat <- merger(dat)
@@ -88,16 +88,14 @@ tracing=resdat$tracing
 # cutting the time series leaving 5 days before contagion and 75 after
 
 require(zoo)
-seldb=resdat$confirmed
 
 #alignment of the wide format
-# facciamo al quinto giorno
-
+seldb=resdat$confirmed
 firstc=apply(seldb[,-1], 1, function(x) min(which(x!=0)))
 
 source("Silvia/aligning.R")
 
-rs=aligning(rs, firstc)
+rs=aligning(rs, firstc) #10 giorni prima del contagio + 75 dopo
 test=aligning(test)
 tracing=aligning(tracing)
 
@@ -136,18 +134,12 @@ res2 <- funHDDC(list(tra,res,tes), model = c('AkjBkQkDk', 'AkjBQkDk', 'AkBkQkDk'
                 K = 1:5) 
 
 # coclustering funLBM
-disturb=rnorm(2380, 0, 0.1)
-max(disturb)
-
-disturb=matrix(disturb, nrow=28)
-distracing=tracing+disturb
-distest=test+disturb
 
 require(abind)
 pol=abind(list(rs, tracing, test), along=3)
 
 
-pol2=array(dim=c(25,3,dim(pol)[2]))
+pol2=array(dim=c(20,3,dim(pol)[2]))
 for (i in 1:dim(pol)[2]){
   for (j in 1:dim(pol)[3]){
     pol2[,j,i]=pol[,i,j]
@@ -213,23 +205,23 @@ plot(fdata(test[ciao$row_clust==6,]), main="Testing-based", ylim=c(-2,3.5))
 
 #restrizioni
 medieclust=t(sapply(1:5, function(i) mean(fdata(rs[ciao$row_clust==i,]))$data))
-plot(fdata(medieclust))
+plot(fdata(medieclust),main="Restrictions")
 # 1=nero, 2=rosso, 3=verde, 4=blu, 5=turchino
 
 #testing
 medieclust=t(sapply(1:5, function(i) mean(fdata(test[ciao$row_clust==i,]))$data))
-plot(fdata(medieclust))
+plot(fdata(medieclust), main="Testing")
 
 #tracing
 medieclust=t(sapply(1:5, function(i) mean(fdata(tracing[ciao$row_clust==i,]))$data))
-plot(fdata(medieclust))
+plot(fdata(medieclust),main="Tracing")
 
 
 ## cluster uno: testing-based CAN, DEU, GBR, SWE, USA
 ## cluster due: restrinctions(strong)-testing(mild)-based IRL, IRN, ITA, NLD, TUR
 ## cluster tre: mild levels of all 3 : AUT BEL CHE DNK ESP FIN FRA NOR RUS
 ## cluster QUATTRO: testing and tracing based KOR and SGP
-## cluster cinque: (mild) restriction and (mild) testing, GRC PRT ROU SAU
+## cluster cinque:  restriction and (mild) tracing, GRC PRT ROU SAU
 
 
 
