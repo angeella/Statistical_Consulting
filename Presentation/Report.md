@@ -1,10 +1,3 @@
----
-title: "Habits"
-author: John Doe
-date: March 22, 2005
-output: ioslides_presentation
----
-
 Measuring the effect of different political actions to contrast the contagion of COVID19
 ========================================================
 author: Angela Andreella, Michele Lambardi, Silvia De Nicolo
