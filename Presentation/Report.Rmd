@@ -21,21 +21,27 @@ rm(list = ls())
 source("~/GitHub/Statistical_Consulting/Angela/load_DB.R")
 ```
 
-## Objective
-
-
-## Which type of action?
-
 
 ## Worldwide case
 
+### Objective
+
+
+### Motivation
+
 ```{r pressure, echo=FALSE, warning = FALSE, comment = FALSE}
-a <- ggplot(dat_shape, aes(x = date, y = confirmed_count, group = Clusters, color = Clusters)) + geom_smooth() + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Date") + xlab("Confirmed")
+a <- ggplot(dat_shape, aes(x = date, y = active/1000, group = Clusters, color = Clusters)) + geom_smooth() + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Active per 1000") + xlab("Date") 
 
 ggplotly(a)
 ```
 
-## Italy case
+### Analysis
+
+
+### Which policies acted better?
+
+
+### Who acted promptly?
 
 
 ## Take home message
