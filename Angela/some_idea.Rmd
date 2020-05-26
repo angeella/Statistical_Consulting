@@ -214,6 +214,54 @@ plot(pred)
 Plot LockDown Policies
 
 ```{r}
+out0 <- ggeffect(mod1, terms = "school_closingF")[c(1,3),]
+out1 <- ggeffect(mod1, terms = "gatherings_restrictionsF")[c(1,3),]
+out2 <- ggeffect(mod1, terms = "transport_closingF")[c(1,2),]
+out3 <- ggeffect(mod1, terms = "stay_home_restrictionsF")[c(1,4),]
+out4 <- ggeffect(mod1, terms = "internal_movement_restrictionsF")[c(1,2),]
+out5 <- ggeffect(mod1, terms = "testing_policyF")
+out6 <- ggeffect(mod1, terms = "contact_tracingF")
+
+OUT <- rbind(out0, out1, out2, out3, out4, out5, out6)
+OUT$Policies <- c(rep("School Closing", nrow(out0)),
+             rep("No Gathering", nrow(out1)),
+             rep("No Transport", nrow(out2)),  
+             rep("Stay Home", nrow(out3)),
+             rep("No Movement", nrow(out4)),  
+             rep("Testing", nrow(out5)),
+             rep("Tracing", nrow(out6)))
+
+colnames(OUT)[1] <- "Strength"
+Value <- c("No measures",  "Require closing",
+               "No measures",  "< 10 people",
+           "No measures", "Recommend closing",
+               "No measures", "Minimal exceptions",
+               "No measures", "Recommend closing", 
+               "No measures", "Specific criteria", "Symptoms", "Open public", "No measures", "Limited", "Comprehensive")
+
+ggplot(data=OUT, aes(x=Policies, y=predicted,fill = Strength, color = Strength)) +
+  geom_bar(stat="identity",  position="dodge") +
+    scale_color_viridis(discrete = TRUE, option = "D")+
+scale_fill_viridis(discrete = TRUE) +
+ # theme_minimal()+  xlab("Active Predicted")+
+  geom_text(
+    aes(x = Policies, y = round(predicted), label = round(predicted), group = Strength),
+     hjust = -0.5, size = 3,
+    position = position_dodge(width = 1),
+    inherit.aes = TRUE
+  )  +  geom_text(colour="black", aes(y=-1000, label=Value,  vjust = .5),  position=position_dodge(width=1), hjust=-.1,inherit.aes = TRUE) +
+ theme_minimal() +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x =element_blank(),
+        legend.position="none") + coord_flip()
+
+```
+
+
+
+```{r}
 pred <- ggeffect(mod1, terms = "testing_policyF")
 plot(pred)
 ```
