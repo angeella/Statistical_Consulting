@@ -1,0 +1,42 @@
+---
+title: "Measuring the effect of different political actions to contrast the contagion of COVID19"
+author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
+date: "March 22, 2005"
+output:
+  ioslides_presentation: 
+   theme: cosmo
+   incremental: true
+   transition: slower
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r include = FALSE}
+rm(list = ls())
+source("~/GitHub/Statistical_Consulting/Angela/load_DB.R")
+```
+
+## Objective
+
+
+## Which type of action?
+
+
+## Worldwide case
+
+```{r pressure, echo=FALSE, warning = FALSE, comment = FALSE}
+a <- ggplot(dat_shape, aes(x = date, y = confirmed_count, group = Clusters, color = Clusters)) + geom_smooth() + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Date") + xlab("Confirmed")
+
+ggplotly(a)
+```
+
+## Italy case
+
+
+## Take home message
+
