@@ -1,0 +1,89 @@
+---
+title: "Habits"
+author: "John Doe"
+date: "March 22, 2005"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+  beamer_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r include = FALSE}
+rm(list = ls())
+#load package
+setwd("~/GitHub/Statistical_Consulting/Angela/")
+#load package
+source("packages.R")
+
+#load variables
+load("Data/var.RData")
+
+#load data
+load("Data/db_with_R0.RData")
+
+dat <- df
+#add Cluster Silvia aligned
+
+uno <- c("KOR", "SGP")
+due <- c("DEU", "SWE")
+tre <- c("CAN", "GRC", "PRT","USA")
+quattro <- c("ESP", "GBR", "IRL", "ITA", "NLD")
+cinque <- c("AUT", "BEL", "CHE", "DNK", "FIN", "FRA", "NOR")
+states_to_sel <- c(uno,due,tre,quattro,cinque)
+
+datA <- dat %>% filter(id %in% states_to_sel)
+
+datA$Clusters <- ifelse(datA$id %in% uno, "Cl1", 
+                        ifelse(datA$id %in% due, "Cl2", 
+                               ifelse(datA$id %in% tre, "Cl3", 
+                                      ifelse(datA$id %in% quattro, "Cl4", 
+                                             "Cl5"))))
+dat <- datA
+
+#Some steps 
+dat$Clusters <- factor(dat$Clusters)
+
+dat_shape <- dat %>%
+  left_join(dat %>%
+              filter(confirmed >= 1) %>%
+              group_by(id) %>%
+              summarise(date.start=min(date)),
+            by="id") %>%
+  mutate(date2=date-date.start) %>%
+  as.data.frame()
+
+dat_shape <- add_R0_ML(dat_shape)
+
+dat_shape <- 
+  dat_shape %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(confirmed_lag = Hmisc::Lag(confirmed, shift  = -14))
+
+dat_shape <- 
+  dat_shape %>% 
+#  group_by(id) %>%
+  mutate(confirmed_prop = confirmed_lag/pop,
+         active = pmax(confirmed - deaths - recovered, 0))
+
+dat_shape$confirmed_count <- ave(dat_shape$confirmed, dat_shape$id, FUN=function(x) pmax(0, c(0, diff(x))))
+
+dat_shape <- 
+  dat_shape %>% arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(confirmed_count_lag = Hmisc::Lag(confirmed_count, shift  = -14),
+         active_lage = Hmisc::Lag(active, shift  = -14))
+```
+
+```{r pressure, echo=FALSE, warning = FALSE}
+a <- ggplot(dat_shape, aes(x = date, y = confirmed_count, group = Clusters, color = Clusters)) + geom_smooth() + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Date") + xlab("Confirmed")
+
+ggplotly(a)
+```
+
+
