@@ -142,3 +142,5 @@ f <- as.formula(paste("active_lage", "~",
                       "+ Clusters  + pop_density_log + pca_EC + (0 + pca_LD|id) + (1|date2) + (1| Clusters)"))
 
 mod1 <- glmmTMB(f, dat_shape, family="nbinom2", offset = log(active + 1))
+
+save(list = ls(all.names = TRUE), file = "out.RData")
