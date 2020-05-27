@@ -41,13 +41,16 @@ knitr::opts_chunk$set(echo = F)
 
 ```{r, include=F}
 rm(list = ls())
+# devtools::install_github('ropensci/plotly')
 require(plotly, quietly = T)
+require(sp, quietly = T)
 require(dplyr, quietly = T)
 require(glmmTMB, quietly = T)
 require(COVID19, quietly = T)
 require(effects, quietly = T)
 require(ggplot2, quietly = T)
 require(sf, quietly = T)
+require(sfheaders)
 require(rnaturalearth, quietly = T)
 require(rnaturalearthdata, quietly = T)
 load("../Michele/finaleregioni.RData")
@@ -146,19 +149,31 @@ last %>%
 ## A map of criticality
 
 ```{r, warning=F}
-last %>%
-   ggplot() +
-   geom_sf(aes(fill=ratepoint)) +
-   theme(axis.text.x = element_blank(),
-         # axis.title.x = element_blank(),
-         axis.title.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        rect = element_blank(),
-        legend.title = element_blank()) +
-   scale_fill_gradientn(colors = c("white", "black"), labels = function(x) paste0(ifelse(x<1,"","+"), (x-1)*100, "%")) +
-   geom_sf_text(aes(label=ifelse(region=="Basilicata", "?", ""))) +
-   xlab(paste0("active cases expected in two weeks"))
+# $ geometry           :sfc_MULTIPOLYGON of length 51; first list element: List of 1
+#   ..$ :List of 1
+#   .. ..$ : num [1:245, 1:2] -1111066 -1110710 -1096162 -1095175 -1012095 ...
+#   ..- attr(*, "class")= chr  "XY" "MULTIPOLYGON" "sfg"
+#  - attr(*, "sf_column")= chr "geometry"
+#  - attr(*, "relation_to_geometry")= Factor w/ 3 levels "field","lattice",..: NA NA NA NA NA NA NA NA NA NA ...
+#   ..- attr(*, "names")= chr  "geo_id" "fips_state" "name" "lsad" ...
+ggplotly(
+   last %>%
+      mutate(value=(ratepoint-1)*100) %>%
+      as_Spatial() %>%
+      st_as_sf() %>%
+      ggplot() +
+      geom_sf(aes(fill=value), color="black", lwd=0.5) +
+      scale_fill_gradientn(colors = c("white", "darkblue"), labels = function(x) paste0(ifelse(x<0,"","+"), x, "%")) +
+      theme(axis.text.x = element_blank(),
+            # axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.ticks = element_blank(),
+           rect = element_blank(),
+           legend.position = "none") +
+      # geom_sf_text(aes(label=ifelse(region=="Basilicata", "?", "")), color="white") +
+      xlab(paste0("active cases expected in two weeks"))
+)
 ```
 
 ## Anything weird?
