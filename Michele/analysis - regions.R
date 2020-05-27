@@ -9,143 +9,103 @@ require(rnaturalearthdata)
 require(tidyr)
 require(sf)
 require(Hmisc)
+require(lme4)
 source("Michele/get.maps.R")
 source("Michele/lib/phases.R")
+source("Angela/divide_var.R")
+
+wb <- c(
+  "pop_0_14"="SP.POP.0014.TO.ZS",
+  "pop_15_64"="SP.POP.1564.TO.ZS",
+  "pop_65_up"="SP.POP.65UP.TO.ZS",
+  "pop_density"="EN.POP.DNST",
+  "pop_death_rate"="SP.DYN.CDRT.IN",
+  "gdp"="NY.GDP.PCAP.CD",
+  "health_exp"="SP.DYN.LE00.IN",
+  "hosp_beds"="SH.MED.BEDS.ZS"
+)
 
 dat <- bind_rows(
   covid19(
     country = c(
-      "Portugal",
-      "Spain",
-      "France",
-      "Switzerland",
-      "Ireland",
-      "Austria",
-      "United Kingdom",
-      "Belgium",
-      "Netherlands",
-      "Germany",
-      "Denmark",
-      "Sweden",
-      "Norway",
-      "Korea, South",
-      "Singapore"
-    ),
-    level = 1),
-  covid19(country = "Italy", level = 2)
-  # ,covid19(ISO = mapdata$id[mapdata$civic] %>% sub(pattern = ",.*", replacement = "") %>% unique(), level = 3)
+      "Portugal", "Spain", "France", "Switzerland", "Ireland", "Austria", "United Kingdom", "Belgium", "Netherlands", "Germany", "Denmark", "Sweden", "Norway", "Korea, South", "Singapore"
+    ), level = 1, wb=wb),
+  covid19(country = "Italy", level = 2, wb=wb)
 ) %>%
   rename(
     country=administrative_area_level_1,
-    region =administrative_area_level_2
+    region=administrative_area_level_2
   ) %>%
   arrange(country, region, date) %>%
   mutate(
     active=pmax(0, confirmed-deaths-recovered),
-    confirmed.new=pmax(0, confirmed - lag(confirmed,1)),
-    deaths.new=pmax(0, deaths - lag(deaths,1)),
-    recovered.new=pmax(0, recovered - lag(recovered,1)),
-    tests.new=pmax(0, tests - lag(tests,1))
+    date = date %>% as.Date(),
+    region = region %>% replace_na("country")
   ) %>%
+  group_by(country, region) %>%
   mutate(
     active.future=Hmisc::Lag(active,-14),
-    confirmed.new.future=Hmisc::Lag(confirmed.new,-14),
-    deaths.new.future=Hmisc::Lag(deaths.new,-14),
-    recovered.new.future=Hmisc::Lag(recovered.new,-14),
-    tests.new.future=Hmisc::Lag(tests.new,-14),
-    hosp.future=Hmisc::Lag(hosp,-14),
-    vent.future=Hmisc::Lag(vent,-14),
-    icu.future=Hmisc::Lag(icu,-14),
     tests.future=Hmisc::Lag(tests,-14),
-    tests.futurenear=Hmisc::Lag(tests,-7),
     tests.past=Hmisc::Lag(tests,14)
   ) %>%
   as.data.frame() %>%
   calc.phases() %>%
-  mutate(
-    region = region %>% replace_na("country") %>% factor(levels = c("country", unique(region) %>% na.omit())),
-    date = date %>% as.Date()
-  ) %>%
-  filter(!is.na(active.future))
-
-summary(dat)
+  filter(confirmed > 30)
 
 map <- get.maps(dat)
 
+# save(map, file="Michele/maps.RData")
+
 dat <- dat %>%
-  left_join(
-    map %>%
-      as.data.frame() %>%
-      mutate(areakm2=(geometry %>% st_area() %>% as.numeric())*1e-6) %>%
-      select(country, region, areakm2),
-    by=c("country", "region")
-  ) %>%
-  mutate(denspop=population/areakm2)
+  filter(country=="Italy" & region!="country")
+
+dat %>%
+  ggplot() +
+  geom_line(aes(x=date, y=tests, group=id, color=region))
+
+dat <- dat %>%
+  mutate(
+    denominator=log(0.5 + active),
+    log_past_tests=log(tests - tests.past + 0.5),
+    log_future_tests=log(tests.future - tests + 0.5),
+    log_pop=log(population),
+    log_dens=log(pop_density),
+    overdispersion=1:nrow(dat)
+  )
 
 f.def <- active.future ~
-  offset(log(0.5 + active)) +
+  offset(denominator) +
   phase +
-  (phase + 1|region) +
-  log(population) +
-  log(tests - tests.past + 0.5) +
-  log(tests.future - tests + 0.5) +
-  (1 | date) +
-  log(denspop)
+  log_past_tests +
+  # log_future_tests +
+  (phase+1|region) +
+  (1|date) +
+  (1|overdispersion) # +
+  # log_pop #+
+  # log_dens
 
-model <- glmmTMB(
+model <- glmer(
   f.def,
-  data = dat %>% filter(country=="Italy"),
+  data = dat,
   family = poisson()
 )
 
-require(performance)
-check_overdispersion(model)
+require(ciTools)
 
-summary(model)
-
-pdf("Plots/graficoregionifinale.pdf")
-ranef(model)[[1]]$region %>%
-  mutate(region=rownames(.), country="Italy") %>%
-  left_join(map, by=c("country", "region")) %>%
-  st_as_sf() %>%
-  ggplot() +
-  geom_sf(aes(fill=phase))
-dev.off()
-
-est <- ranef(model)[[1]]$`region:country` %>%
-  mutate(
-    country=rownames(.) %>% sub(pattern = ".*:", replacement = ""),
-    region=rownames(.) %>% sub(pattern = ":.*", replacement = "")
-  ) %>%
+dat <- dat %>% right_join(model@frame %>% dplyr::select(region, date), by=c("region", "date"))
+dat <- ciTools::add_pi(dat, model)
+dat <- dat %>%
   rename(
-    phase.region=phase
-  ) %>%
-  left_join(
-    ranef(model)[[1]]$country %>%
-      mutate(
-        country=rownames(.)
-      ) %>%
-      rename(phase.country=phase),
-    by="country"
-  ) %>%
-  mutate(phase = phase.region + phase.country + (
-    effect("phase", model) %>%
-      as.data.frame() %>%
-      summarise(phase=log(fit[phase==1]/fit[phase==0])) %>%
-      unlist()
-  )) %>%
-  select(country, region, phase)
+    predlower=`LPB0.025`,
+    predpoint=pred,
+    predupper=`UPB0.975`
+    )
+dat <- dat %>%
+  mutate(denominator=exp(denominator)) %>%
+  mutate(
+    ratelower=predlower/denominator,
+    ratepoint=predpoint/denominator,
+    rateupper=predupper/denominator
+  )
 
-map %>%
-  left_join(
-    est,
-    by=c("country", "region")
-  ) %>%
-  st_as_sf() %>%
-  ggplot() +
-  geom_sf(aes(fill=(exp(phase)-1)*100), lwd=0) +
-  xlim(-15, 25) +
-  ylim(30, 70) +
-  scale_fill_gradientn(colors=c("darkgreen", "green", "yellow", "orange", "red"))
-
-summary(model)
+save(dat, model, file="Michele/finaleregioni.RData")
