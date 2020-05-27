@@ -18,16 +18,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r include = FALSE}
 rm(list = ls())
-source("~/GitHub/Statistical_Consulting/Angela/load_DB.R")
+#source("~/GitHub/Statistical_Consulting/Angela/load_DB.R")
+source("~/GitHub/Statistical_Consulting/Angela/packages.R")
+load("~/GitHub/Statistical_Consulting/Angela/out.RData")
 ```
 
 
 ## Worldwide case
 
-### Objective
-
-
-### Motivation
+## Motivation
 
 ```{r pressure, echo=FALSE, warning = FALSE, comment = FALSE}
 a <- ggplot(dat_shape, aes(x = date, y = active/1000, group = Clusters, color = Clusters)) + geom_smooth() + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Active per 1000") + xlab("Date") 
@@ -35,13 +34,82 @@ a <- ggplot(dat_shape, aes(x = date, y = active/1000, group = Clusters, color = 
 ggplotly(a)
 ```
 
-### Analysis
+## Analysis
 
+ - We analyze the **Active person**, i.e., Confirmed - Deaths - Recovered $\rightarrow$ **Count** Dependent Variable (Generalized Poisson Model);
+ 
+ 
+ - The data are observed for each country nested within clusters during $103$ days $\rightarrow$ Mixed Model;
+ 
+ 
+GENERALIZED POISSON MIXED MODEL for Overdispersed Count Data 
 
-### Which policies acted better?
+## Which policies acted better?
 
+```{r echo = FALSE}
+out0 <- ggeffect(mod1, terms = "school_closingF")[c(1,3),]
+out1 <- ggeffect(mod1, terms = "gatherings_restrictionsF")[c(1,3),]
+out2 <- ggeffect(mod1, terms = "transport_closingF")[c(1,2),]
+out3 <- ggeffect(mod1, terms = "stay_home_restrictionsF")[c(1,4),]
+out4 <- ggeffect(mod1, terms = "internal_movement_restrictionsF")[c(1,2),]
+out5 <- ggeffect(mod1, terms = "testing_policyF")
+out6 <- ggeffect(mod1, terms = "contact_tracingF")
 
-### Who acted promptly?
+OUT <- rbind(out0, out1, out2, out3, out4, out5, out6)
+OUT$Policies <- c(rep("School Closing", nrow(out0)),
+             rep("No Gathering", nrow(out1)),
+             rep("No Transport", nrow(out2)),  
+             rep("Stay Home", nrow(out3)),
+             rep("No Movement", nrow(out4)),  
+             rep("Testing", nrow(out5)),
+             rep("Tracing", nrow(out6)))
+
+colnames(OUT)[1] <- "Strength"
+Value <- c("No measures",  "Require closing",
+               "No measures",  "< 10 people",
+           "No measures", "Recommend closing",
+               "No measures", "Minimal exceptions",
+               "No measures", "Recommend closing", 
+               "No measures", "Specific criteria", "Symptoms", "Open public", "No measures", "Limited", "Comprehensive")
+
+a<-ggplot(data=OUT, aes(x=Policies, y=predicted,fill = Strength, color = Strength)) +
+  geom_bar(stat="identity",  position="dodge") +
+    scale_color_viridis(discrete = TRUE, option = "D")+
+scale_fill_viridis(discrete = TRUE) +
+ # theme_minimal()+  xlab("Active Predicted")+
+  geom_text(
+    aes(x = Policies, y = round(predicted), label = round(predicted), group = Strength),
+     hjust = -0.5, size = 3,
+    position = position_dodge(width = 1),
+    inherit.aes = TRUE
+  )  +  
+#  geom_text(colour="black", aes(y=-1000, label=Value,  vjust = .5),  position=position_dodge(width=1), hjust=-.1,inherit.aes = TRUE) +
+ theme_minimal() +
+  theme(axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x =element_blank()) + coord_flip()
+ggplotly(a)
+```
+
+## Who acted promptly?
+
+```{r echo = FALSE}
+pr<-ggeffect(mod1, "Clusters")
+
+world <- ne_countries(scale = "medium", returnclass = "sf") 
+world$id <- world$iso_a3 
+
+dat_shape$confFIT <- ifelse(dat_shape$Clusters == "Cl1", pr$predicted[1],
+                    ifelse(dat_shape$Clusters == "Cl2", pr$predicted[2],
+                           ifelse(dat_shape$Clusters == "Cl3", pr$predicted[3],
+                                  ifelse(dat_shape$Clusters == "Cl4", pr$predicted[4], pr$predicted[5]))))
+
+datMap <- left_join(world, dat_shape, by="id")
+
+a<-ggplot(data = datMap) + geom_sf(aes(fill = confFIT))
+ggplotly(a)
+```
 
 
 ## Take home message
