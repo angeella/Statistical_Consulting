@@ -4,13 +4,13 @@ title: Measuring the effect of different political actions to contrast the conta
 author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
 date: "March 22, 2005"
 output:
-  slidy_presentation:
+  beamer_presentation:
     incremental: yes
   ioslides_presentation:
     incremental: yes
     theme: cosmo
     transition: slower
-  beamer_presentation:
+  slidy_presentation:
     incremental: yes
 ---
 

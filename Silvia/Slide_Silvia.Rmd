@@ -1,0 +1,60 @@
+---
+title: Measuring the effect of different political actions to contrast the contagion
+  of COVID19
+author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
+date: "June 3, 2020"
+output:
+  slidy_presentation:
+    incremental: yes
+  beamer_presentation:
+    incremental: yes
+  ioslides_presentation:
+    incremental: yes
+    theme: cosmo
+    transition: slower
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objective
+
+Policy makers in different Countries have introduced different political action to contrast the COVID19 contagion.
+
+1. What are the different containment efforts and is there a strategies resemblance across countries?
+
+2. What is the effect of these policies on the contagion from a global perspective?
+
+3. Has the same action lead to different results in the case of different regions of Italy?
+
+
+## Data
+
+* COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at **Johns Hopkins University** for contagion data,
+
+*  **Oxford** COVID-19 Government Response Tracker (OxCGRT) for policies tracking. 
+
+
+## Containment strategies and resembling patterns
+
+Tools:
+
+
+*  Dimension Reduction via Polychoric PCA for 11 ordinal variables (from 0 to 2 or 0 to 3) indicating the stringency level of policies related to
+
+     + School, workplace and transport closing and event cancellation;
+  
+     + Gathering, stay-home and internal/international movement restrictions;
+  
+     + Information, Testing and Contact Tracing campaigns. 
+
+
+*  Function Data Co-Clustering of the countries aligned to the first contagion (from the 10th day before contagion).
+
+## Containment strategies
+
+
+
+## Resembling Patterns
