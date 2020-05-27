@@ -1,13 +1,17 @@
 ---
-title: "Measuring the effect of different political actions to contrast the contagion of COVID19"
+title: Measuring the effect of different political actions to contrast the contagion
+  of COVID19
 author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
 date: "March 22, 2005"
 output:
-  ioslides_presentation: 
-   theme: cosmo
-   incremental: true
-   transition: slower
-    
+  slidy_presentation:
+    incremental: yes
+  ioslides_presentation:
+    incremental: yes
+    theme: cosmo
+    transition: slower
+  beamer_presentation:
+    incremental: yes
 ---
 
 ```{r setup, include=FALSE}
