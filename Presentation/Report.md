@@ -34,4 +34,8 @@ summary(cars)
 Slide With Plot
 ========================================================
 
-![plot of chunk unnamed-chunk-2](Report-figure/unnamed-chunk-2-1.png)
+
+
+```
+Error in library(plotly) : there is no package called 'plotly'
+```
