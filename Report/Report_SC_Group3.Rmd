@@ -1,0 +1,49 @@
+---
+output: 
+  pdf_document:
+title: " Measuring the effect of different political actions to contrast the contagion of COVID19"
+subtitle: "Angela Andreella, Michele Lambardi, Silvia De Nicolò"
+date: 03th June, 2020
+header-includes: \usepackage{graphicx, amsmath, bm, gensymb}
+fontfamily: avant
+graphics: yes
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Table of Contents
+
+* Introduction
+
+* (Data and Methodology)
+
+* Containment strategies and resembling patterns
+
+* Effect of policies from a global perspective
+
+* Italian lockdown and regional outcomes
+
+## Introduction 
+
+Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political action to contrast
+the contagion. The containment restrictions span from worldwide curfews, stay-at-home orders, shelter-in-place orders, shutdowns/lockdowns to softer measures and stay-at-home recommendations and including in addition the development of contact tracing strategies and specific testing policies.
+The pandemic has resulted in the largest amount of shutdowns/lockdowns worldwide at the same time in history.
+
+The timing of the different interventions with respect to the spread of the contagion both at a global and intra-national level has been very different from country to country. This, in combination with demographical, economic, health-care related and area-specific factors, have resulted in different contagion patterns across the world.
+
+
+Therefore, our goal is two-fold. The aim is to measure the effect of the different political actions by analysing and comparing types of actions from a global perspective and, at the same time, to benchmark the effect of the same action in an heterogeneous framework such as the Italian regional context.
+
+
+different regions of Italy.
+
+
+
+
+
+
+
+
