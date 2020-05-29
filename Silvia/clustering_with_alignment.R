@@ -204,6 +204,7 @@ plot(fdata(tracing[ciao$row_clust==6,]), main="Tracing-based", ylim=c(-2,3.5))
 plot(fdata(test[ciao$row_clust==6,]), main="Testing-based", ylim=c(-2,3.5))
 
 #restrizioni
+par(mfrow=c(1,3))  
 medieclust=t(sapply(1:5, function(i) mean(fdata(rs[ciao$row_clust==i,]))$data))
 plot(fdata(medieclust),main="Restrictions")
 # 1=nero, 2=rosso, 3=verde, 4=blu, 5=turchino

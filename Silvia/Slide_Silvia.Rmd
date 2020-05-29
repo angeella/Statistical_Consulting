@@ -4,14 +4,14 @@ title: Measuring the effect of different political actions to contrast the conta
 author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
 date: "June 3, 2020"
 output:
-  slidy_presentation:
-    incremental: yes
-  beamer_presentation:
-    incremental: yes
   ioslides_presentation:
     incremental: yes
     theme: cosmo
     transition: slower
+  slidy_presentation:
+    incremental: yes
+  beamer_presentation:
+    incremental: yes
 ---
 
 
@@ -37,12 +37,9 @@ Policy makers in different Countries have introduced different political action 
 *  **Oxford** COVID-19 Government Response Tracker (OxCGRT) for policies tracking. 
 
 
-## Containment strategies and resembling patterns
+## 1. Containment strategies and resembling patterns
 
-Tools:
-
-
-*  Dimension Reduction via Polychoric PCA for 11 ordinal variables (from 0 to 2 or 0 to 3) indicating the stringency level of policies related to
+*  Dimension Reduction via Polychoric PCA for 11 ordinal variables (from 0 to 2 or 0 to 3) indicating the stringency level of policies such as
 
      + School, workplace and transport closing and event cancellation;
   
@@ -55,6 +52,50 @@ Tools:
 
 ## Containment strategies
 
+```{r, include=F}
+rm(list = ls())
+require(COVID19, quietly=T)
+require(ggplot2, quietly=T)
+require(dplyr, quietly=T)
+require(countrycode, quietly=T)
+require(maps, quietly=T)
+require(rnaturalearth, quietly=T)
+require(rnaturalearthdata, quietly=T)
+require(ggpubr, quietly=T)
+require(gridExtra, quietly=T)
+require(psych, quietly=T)
+require(viridis, quietly=T)
+
+load("cluster20paesi.Rdata")
+load("/Users/siviadenicolo/Documents/GitHub/Statistical_Consulting/Silvia/SAVEPLOTS.Rdata")
+
+```
+
+## Containment strategies
+
+```{r,  echo=FALSE}
+ggplot(dpca, aes(x=PC, y=Loadings, fill=policies, group=position))+
+ geom_bar(stat="identity", position="dodge")+
+  coord_flip()+scale_fill_manual("", breaks=c(apol, rpol), 
+                                 values=c(gray[1], peach[1], gray[2],                                           peach[2], gray[3:6], peach[3], gray[7:8]))
+
+```
+
+Co-clustering of policies variables: Restriction- based policies on one hand, Tracing and Testing policies on the other hand.
+
+## Resembling patterns
 
 
-## Resembling Patterns
+```{r, echo=FALSE}
+grid.arrange(na2, europe2,                  
+             arrangeGrob(kor2, sin2, nrow = 2, ncol=1),
+             ncol = 3, nrow=1, widths=c(3,4,2)) 
+
+```
+
+
+## Resembling patterns
+```{r, fig.align='center', echo=FALSE}
+ggarrange(restrict, testt, trace, ncol=3, nrow=1, common.legend = TRUE, legend="bottom")
+
+```
