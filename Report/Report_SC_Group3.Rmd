@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction 
 
-Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political action to contrast
+Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political actions to contrast
 the contagion. The containment restrictions span from worldwide curfews, stay-at-home orders, shelter-in-place orders, shutdowns/lockdowns to softer measures and stay-at-home recommendations and including in addition the development of contact tracing strategies and specific testing policies.
 The pandemic has resulted in the largest amount of shutdowns/lockdowns worldwide at the same time in history.
 
@@ -37,8 +37,7 @@ The timing of the different interventions with respect to the spread of the cont
 
 Therefore, our goal is two-fold. The aim is to measure the effect of the different political actions by analysing and comparing types of actions from a global perspective and, at the same time, to benchmark the effect of the same action in an heterogeneous framework such as the Italian regional context.
 
-
-different regions of Italy.
+In doing so, some issue arises concerning the identification and codification of the different measures undertaken by governments, the analysis related to whether a strategies resemblance can be detected across countries.
 
 
 
