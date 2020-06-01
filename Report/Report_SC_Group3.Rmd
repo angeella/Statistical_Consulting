@@ -1,34 +1,35 @@
 ---
-title: 'Measuring the effect of different political actions to contrast the contagion
-  of COVID19'
-date: "03th June, 2020"
-fontfamily: avant
-output:
-  html_document:
-    df_print: paged
-    toc: true
-    toc_depth: 2
-    number_sections: true
-    fig_width: 6
-    fig_height: 4
-  pdf_document: null
-graphics: yes
+output: 
+  pdf_document:
+title: " Measuring the effect of different political actions to contrast the contagion of COVID19"
+subtitle: "Angela Andreella, Michele Lambardi, Silvia De Nicolò"
+date: 03th June, 2020
 header-includes: \usepackage{graphicx, amsmath, bm, gensymb}
+fontfamily: avant
+graphics: yes
 fontsize: 12pt
-subtitle: Angela Andreella, Michele Lambardi, Silvia De Nicolò
-bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
-path <- "~/GitHub/Statistical_Consulting/" #Insert your path
 knitr::opts_chunk$set(echo = TRUE)
-source(paste0(path, "Angela/packages.R"))
-load(paste0(path, "Presentation/Data/out.RData"))
 ```
 
-# Introduction 
+## Table of Contents
 
-Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political action to contrast the contagion. The containment restrictions span from worldwide curfews, stay-at-home orders, shelter-in-place orders, shutdowns/lockdowns to softer measures and stay-at-home recommendations and including in addition the development of contact tracing strategies and specific testing policies.
+* Introduction
+
+* (Data and Methodology)
+
+* Containment strategies and resembling patterns
+
+* Effect of policies from a global perspective
+
+* Italian lockdown and regional outcomes
+
+## Introduction 
+
+Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political actions to contrast
+the contagion. The containment restrictions span from worldwide curfews, stay-at-home orders, shelter-in-place orders, shutdowns/lockdowns to softer measures and stay-at-home recommendations and including in addition the development of contact tracing strategies and specific testing policies.
 The pandemic has resulted in the largest amount of shutdowns/lockdowns worldwide at the same time in history.
 
 The timing of the different interventions with respect to the spread of the contagion both at a global and intra-national level has been very different from country to country. This, in combination with demographical, economic, health-care related and area-specific factors, have resulted in different contagion patterns across the world.
@@ -36,310 +37,9 @@ The timing of the different interventions with respect to the spread of the cont
 
 Therefore, our goal is two-fold. The aim is to measure the effect of the different political actions by analysing and comparing types of actions from a global perspective and, at the same time, to benchmark the effect of the same action in an heterogeneous framework such as the Italian regional context.
 
-
-different regions of Italy.
-
-<<<<<<< HEAD
-# Data 
-=======
-Since the beginning of the COVID-19 epidemic, policy makers in different countries have introduced different political actions to contrast
-the contagion. The containment restrictions span from worldwide curfews, stay-at-home orders, shelter-in-place orders, shutdowns/lockdowns to softer measures and stay-at-home recommendations and including in addition the development of contact tracing strategies and specific testing policies.
-The pandemic has resulted in the largest amount of shutdowns/lockdowns worldwide at the same time in history.
->>>>>>> 8b4cb2d76144d0bd73983591a7b5a83cfb7ad6b3
-
-The data used in this analysis refer to mainly two open datasets, i.e., the COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University for contagion data (@Jhon) and Oxford COVID-19 Government Response Tracker (OxCGRT) for policies tracking (@Oxford).
-
-
-# Containment strategies and resembling patterns 
-
-<<<<<<< HEAD
-# Effect of policies from a global perspective 
-
-Some countries have underestimated the dangerousness of the Coronavirus disease 2019 (COVID-19) and the importance to apply the containment measures. The little concern of some countries regarding the COVID-19 infectious disease is due by many and different reason. Some countries decided to save the economy instead of people lives, i.e., it is a method to fight a war, in this case the pandemic war. 
-
-For that, we want to analyze which coutries adopt the ``optimal'' policy measures to contain the contagion of COVID-19. Thanks to the @Oxford data sets, we know which type of measures each goverment take and when. The indicators of government response considered are $17$ in total, that can be resumed in indicators of lockdown/social distancing, contact tracing, movement restrictions, testing policy, public health measures, and governance and socio-economic measures.
-
-Therefore, some variables as the number of hospital beds are considered from [OECD](http://www.oecd.org/) in order to have some additional covariates that can be influence the variation in government responses to COVID-19. 
-
-We restrict the wide range of responses to COVID-19 from governments around the countries analyzed in Section 3, i.e., Korea, Singapore, Germany, Canada, Sweden, Greece, Portugal, Spain, United States of America, Irland, United Kingdom, Italy, Netherlands, Austria, Switzerland, Finland, Norway, Denmark, and France.
-
-The daily number of active person is analyzed as measure of COVID-19 situation. Being a count variable, we decide to use a Negative Binomial Regression in order to correct also for the possible overdispersion. Therefore, the hierarchical struture induced by the nested structure of countries inside the clusters and by the repeated measures statement. For that, we think to use a generalized mixed model with family negative binomial. The countries information as well as the clusters and date information are used as random effects in our model.
-
-So, the aim is to understand how the lockdown policies influences the contagions. We consider the aligned data respect to the first confirmed case, we have the following situation:
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p1 <- ggplot(dat_shape, aes(x = date, y = active, group = Clusters, color = Clusters)) + geom_smooth(method = 'loess',formula='y ~ x') + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Date") + xlab("Confirmed")
-
-div(ggplotly(p1), align = "center")
-```
-
-Also, we lag the number of active respect to $14$ days, in order to consider the influences of the restrictions imposed at time $t$ on number of active at time $t+14$, in order to make a correct impact. The observations are aligned respect to the first confirmed case across the countries, in order to have observations directly comparable in a longitudinal point of view.
-
-## Exploratory Analysis {.tabset}
-
-The set of covariates considered in this analysis can be divided into three main area:
-
-  1. Longitudinal economic variables;
-
-  2. Longitudinal health vystem variables;
-  
-  3. Fixed demographic/economic/health variables.
-  
-  
-### Economic Variables
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-tab_EC <- data.frame(Name = c("Income Support", "Debt/contract relief for households", "Fiscal measures", "International support"), Measurement = c("Ordinal", "Ordinal", "USD", "USD"), Description = c("Government income support to people that lose their jobs", "Government policies imposed to freeze financial obligations", "Economic fiscal stimuli", "monetary value spending to other countries") )
-knitr::kable(tab_EC)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p2 <- dat_shape %>% ggplot(aes(x=date, y=ox.E1_Income.support, group=Clusters, color=Clusters)) +
-  geom_smooth(method = 'loess',formula='y ~ x') + scale_x_date(date_labels = "%b %d") + ylab("Income Support") + xlab("Date")
-
-p3 <- dat_shape %>% ggplot(aes(x=date, y=ox.E2_Debt.contract.relief, group=Clusters, color=Clusters)) + geom_smooth(method = 'loess',formula='y ~ x') + theme(title = element_blank()) + scale_x_date(date_labels = "%b %d") + ylab("Debt Contract Relief") + xlab("Date")
-
-p2 <- ggplotly(p2)
-p2$x$data[[1]]$showlegend <- FALSE
-p2$x$data[[2]]$showlegend <- FALSE
-p2$x$data[[3]]$showlegend <- FALSE
-p2$x$data[[4]]$showlegend <- FALSE
-p2$x$data[[5]]$showlegend <- FALSE
-p2 <- hide_legend(p2)
-
-div(subplot(p2,p3), align = "center")
-```
-
-We will transform these two first economic variables as continous variables using the Principal Component Analysis, in order to diminuish the number of covariates inside the model, having $9$ ordinal policies lockdown covariates.
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-pca_EC <- polychoric(dat_shape[,var_EC[1:2]])
-matPCA_ec <- cbind(rep(0,2),pca_EC$tau)
-dat_shape$ox.E1_Income.support_f <- as.factor(dat_shape$ox.E1_Income.support)
-dat_shape$ox.E1_Income.support_f <- recode_factor(dat_shape$ox.E1_Income.support_f,
-                                                  "0" = paste0(matPCA_ec[1,1]),
-                                                  "1" = paste0(matPCA_ec[1,2]),
-                                                  "2" = paste0(matPCA_ec[1,3]))
-
-dat_shape$ox.E1_Income.support_f <- as.numeric(dat_shape$ox.E1_Income.support_f)
-dat_shape$ox.E2_Debt.contract.relief_f <- as.factor(dat_shape$ox.E2_Debt.contract.relief)
-dat_shape$ox.E2_Debt.contract.relief_f <- recode_factor(dat_shape$ox.E2_Debt.contract.relief_f,
-                                                        "0" = paste0(matPCA_ec[2,1]),
-                                                        "1" = paste0(matPCA_ec[2,2]),
-                                                        "2" = paste0(matPCA_ec[2,3]))
-dat_shape$ox.E2_Debt.contract.relief_f <- as.numeric(dat_shape$ox.E2_Debt.contract.relief_f)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=ox.E3_Fiscal.measures, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-#log scale
-dat_shape$ox.E3_Fiscal.measures_log <- log(dat_shape$ox.E3_Fiscal.measures +1)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=ox.E4_International.support, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-#log scale and put 0 where NA 
-dat_shape$ox.E4_International.support <- ifelse(is.na(dat$ox.E4_International.support), 0, dat_shape$ox.E4_International.support)
-dat_shape$ox.E4_International.support_log <- log(dat_shape$ox.E4_International.support +1)
-```
-
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=mkt_close, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=mkt_volume, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-```
-
-
-
-### Demographic/Fixed variables
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- ggplot(dat_shape, aes(x=Clusters, y=log(pop), fill=Clusters)) + geom_boxplot() 
-
-ggplotly(p)
-
-```
-
-### Health variables
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-tab_H <- data.frame(Name = c("Emergency Investment in healthcare", "Investment in vaccines"), Measurement = c("USD", "USD"), Description = c("Short-term spending on, e.g, hospitals, masks, etc ", "Announced public
-spending on vaccine development") )
-knitr::kable(tab_H)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=ox.H4_Emergency.investment.in.healthcare, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-```
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-p <- dat_shape %>% ggplot(aes(x=date2, y=ox.H5_Investment.in.vaccines, group=Clusters, color=Clusters)) +
-  geom_smooth() 
-
-ggplotly(p)
-```
-
-pca.
-
-
-## Model
-
-The data are observed for each country nested within date. 
-
-- Two-level model: the units of analysis (Level 1), countries, are nested within clusters (Level 2), date;
-
-- The variability of the data comes from nested sources;
-
-- The Intraclass Correlation Coefficient (ICC) is equal to $0.3910876$ for date, equals $0.04668614$ for id and $ 0.02533497$ for Clusters.
-
-lot to understand the variability respect date
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-abc<-aggregate(active ~id, dat_shape, mean)
-bdata <- dat_shape
-bdata <- merge(bdata,abc,by="id")
-bdata$colorBox <- ifelse(bdata$active.y>= mean(na.omit(bdata$active.x)), "#56B4E9", "#009E73")
-
-bdata$id <- as.factor(bdata$id)
-ggplot(bdata, aes(x=id, y=active.x, fill = colorBox)) +
-    geom_boxplot() +
-  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
-```
-
-and respect Clusters:
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-abc<-aggregate(active ~Clusters, dat_shape, mean)
-bdata <- dat_shape
-bdata <- merge(bdata,abc,by="Clusters")
-bdata$colorBox <- ifelse(bdata$active.y>= mean(na.omit(bdata$active.x)), "#56B4E9", "#009E73")
-
-bdata$Clusters <- as.factor(bdata$Clusters)
-ggplot(bdata, aes(x=Clusters, y=active.x, fill = colorBox)) +
-    geom_boxplot() +
-  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
-```
-
-and id:
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-abc<-aggregate(active ~date2, dat_shape, mean)
-bdata <- dat_shape
-bdata <- merge(bdata,abc,by="date2")
-bdata$colorBox <- ifelse(bdata$active.y>= mean(na.omit(bdata$active.x)), "#56B4E9", "#009E73")
-
-bdata$date2 <- as.factor(bdata$date2)
-ggplot(bdata, aes(x=date2, y=active.x, fill = colorBox)) +
-    geom_boxplot() +
-  scale_color_manual(values=rainbow(6))+ theme(legend.position="none")
-```
-
-**How to choose the random and fixed part?**
-
-The problem is much more complicated than in linear regression because selection on the covariance structure is not straightforward due to computational issues and boundary problems arising from positive semidefinite constraints on covariance matrices.
-
--Conditional AIC (Package cAIC4): The conditional AIC is also appropriate for choosing between a simple null model without any random effects and a complex model incorporating random effects,
-
--Boostrap (R Package pbkrtest): Model comparison of nested models using parametric bootstrap methods. Implemented for some commonly applied model types.
-
-Finally the model is:
-
-```{r, echo = FALSE, comment = F, warning= F, silent = T}
-summary(mod1)
-```
-
-```{r, echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
-a <- ggplot(dat_shape, aes(x = date, y = active/1000, group = Clusters, color = Clusters)) + geom_smooth(method = 'loess',formula = 'y ~ x') + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Active per 1000") + xlab("Date") 
-
-ggplotly(a)
-```
-
-```{r,echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
-out0 <- ggeffect(mod1, terms = "school_closingF")[c(1,3),]
-out1 <- ggeffect(mod1, terms = "gatherings_restrictionsF")[c(1,3),]
-out2 <- ggeffect(mod1, terms = "transport_closingF")[c(1,2),]
-out3 <- ggeffect(mod1, terms = "stay_home_restrictionsF")[c(1,4),]
-out4 <- ggeffect(mod1, terms = "internal_movement_restrictionsF")[c(1,2),]
-out5 <- ggeffect(mod1, terms = "testing_policyF")
-out6 <- ggeffect(mod1, terms = "contact_tracingF")
-
-OUT <- rbind(out0, out1, out2, out3, out4, out5, out6)
-OUT$Policies <- c(rep("School Closing", nrow(out0)),
-                  rep("No Gathering", nrow(out1)),
-                  rep("No Transport", nrow(out2)),  
-                  rep("Stay Home", nrow(out3)),
-                  rep("No Movement", nrow(out4)),  
-                  rep("Testing", nrow(out5)),
-                  rep("Tracing", nrow(out6)))
-
-colnames(OUT)[1] <- "Strength"
-Value <- c("No measures",  "Require closing",
-           "No measures",  "< 10 people",
-           "No measures", "Recommend closing",
-           "No measures", "Minimal exceptions",
-           "No measures", "Recommend closing", 
-           "No measures", "Specific criteria", "Symptoms", "Open", "No measures", "Limited", "Comprehensive")
-
-#OUT$cols <- c("slateblue1", "slateblue2", "slateblue3", "slateblue4")
-
-ggplot(OUT, aes(Policies, predicted, fill = Strength)) +
-  geom_bar(stat = "summary", fun = "mean", 
-           position = position_dodge(width = 0.9)) +
-  scale_y_continuous(name = "Daily Mean Active People", limits = c(0, 1700))+ geom_errorbar(stat = "summary", fun.data = "mean_sdl", 
-                fun.args = list(mult = 2),
-                position =  position_dodge(width =1)) +
-  geom_text(aes(label=Value, group = Strength),     hjust = -0.2, size = 3,
-            position = position_dodge(width = 1),
-            inherit.aes = TRUE)  + coord_flip() + scale_fill_viridis(discrete=T) +
-  theme_minimal() + ylab("") 
-```
-
-```{r echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
-load(paste0(path, "Presentation/Data/plot_map.RData"))
-grid.arrange(na2, europe2,                 
-             arrangeGrob(kor2, sin2, nrow = 2, ncol=1),
-             ncol = 3, nrow=1, widths=c(3,4,2))    
-```
-
-```{r, echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
-load(paste0(path, "Presentation/Data/plot_mod.RData"))
-
-subplot(ggplotly(p1, tooltip = c("colour", "y")) %>% layout(showlegend = FALSE, title = ""),
- ggplotly(p2, tooltip = c("colour", "y"))%>% layout(showlegend = FALSE,title = ""), 
-ggplotly(p3, tooltip = c("colour", "y")) %>% layout(showlegend = FALSE, title = "Stay Home           Testing            Tracing"), shareY = T
-) 
-```
-
-# Italian lockdown and regional outcomes
-
-
-# Effect of policies from a global perspective
-
-=======
 In doing so, some issue arises concerning the identification and codification of the different measures undertaken by governments, the analysis related to whether a strategies resemblance can be detected across countries.
->>>>>>> 8b4cb2d76144d0bd73983591a7b5a83cfb7ad6b3
 
-# Supplementary materials
 
-All the codes used for this analysis is available on [Github](https://github.com/angeella/Statistical_Consulting).
 
 
 
