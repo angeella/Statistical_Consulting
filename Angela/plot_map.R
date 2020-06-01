@@ -10,9 +10,9 @@ require(maps)
 require(rnaturalearth)
 require(rnaturalearthdata)
 
-load("cluster20paesi.Rdata")
+load("~/GitHub/Statistical_Consulting/Silvia/cluster20paesi.Rdata")
 source("~/GitHub/Statistical_Consulting/Angela/packages.R")
-load("~/GitHub/Statistical_Consulting/Angela/model.RData")
+load("~/GitHub/Statistical_Consulting/Presentation/Data/out.RData")
 ### mappa
 
 clust$id <- countrycode(clust$id, 'iso3c', 'country.name')
@@ -126,12 +126,13 @@ sin2=sin+ geom_polygon(data = mapbig,
                        barheight = unit(140, units = "mm"),
                        barwidth = unit(6, units = "mm")))+ theme(legend.position = "none") 
 
-save(na2,europe2,kor2,sin2, file = "Angela/Data/plot_map.RData")
+save(na2,europe2,kor2,sin2, file = "Presentation/Data/plot_map.RData")
 
-eff1 <- ggeffect(mod1, terms = c("Clusters", "stay_home_restrictionsF"))
+eff1 <- ggeffect(mod1, terms = c("Clusters", "gatherings_restrictionsF"))
 attr(eff1, "legend.title") <- ""
 attr(eff1,"title") <- "Stay Home"
-levels(eff1$group) <-  c("No measures", "Recommend", "Essential trips", "Minimal exceptions")
+#levels(eff1$group) <-  c("No measures", "Recommend", "Essential trips", "Minimal exceptions")
+levels(eff1$group) <- c("No measures", "> 1000", "100-1000 people", "10-100 people", "< 10 people")
 
 p1 <- plot(eff1) + ylab("Predicted counts of Active")+ scale_color_discrete() +
   theme_minimal(base_size = 12)  + theme(plot.title =element_text(),
@@ -158,7 +159,7 @@ p3 <- plot(eff3) + ylab("Predicted counts of Active")+ scale_color_discrete() +
                                          axis.title.x = element_blank(),
                                          legend.position = "None")
 
-save(p1,p2,p3, file = "~/GitHub/Statistical_Consulting/Presentation/Data/plot_mod.RData")
+save(p1,p2,p3, file = "~/GitHub/Lockdown_policies_COVID19/Presentation/Data/plot_mod.RData")
 
 
 
