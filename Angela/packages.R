@@ -40,6 +40,7 @@ library(GLMMadaptive)
 library(ggeffects)
 library(directlabels)
 library(performance)
+library(ggpubr)
 # per mappe...
 require(maps)
 require(rnaturalearth)
