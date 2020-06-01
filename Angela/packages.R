@@ -8,6 +8,14 @@ require(stringi)
 require(stringdist)
 library(effects)
 library(lmPerm)
+<<<<<<< HEAD
+library(sf)
+library(withr)
+library(knitr)
+library(shiny)
+library(viridis)
+=======
+>>>>>>> parent of 082075c... update
 library(earlyR)
 library(EpiEstim)
 library(tidyr)

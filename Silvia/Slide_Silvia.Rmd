@@ -1,6 +1,5 @@
 ---
-title: Measuring the effect of different political actions to contrast the contagion
-  of COVID19
+title: Measuring the effect of different political actions to contrast the contagion of COVID19
 author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
 date: "June 3, 2020"
 output:
@@ -95,7 +94,7 @@ grid.arrange(na2, europe2,
 
 
 ## Resembling patterns
-```{r, fig.align='center', echo=FALSE}
+```{r, fig.align='center', echo=FALSE, fig.width = 8}
 ggarrange(restrict, testt, trace, ncol=3, nrow=1, common.legend = TRUE, legend="bottom")
 
 ```

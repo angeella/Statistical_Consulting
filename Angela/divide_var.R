@@ -1,34 +1,26 @@
 #Divide variables between
-#1. SOCIAL LOCKDOWN
+#1. POLICY LOCKDOWN
 #2. FIX VARIABLES
 #3. ECONOMIC
 #4. HEALTH SYSTEM
 #5. INDEX
-#6. MOBILITY
-#7. COVID
+#6. COVID
 
 var_LD <- c("school_closing", "workplace_closing", "cancel_events", "gatherings_restrictions",
          "transport_closing", "stay_home_restrictions", "internal_movement_restrictions",
          "contact_tracing", "testing_policy")
-var_FIX <- c("pop", "pop_65", "pop_age", "pop_density", "hosp_beds", "pop_death_rate",
-             "gdp", "health_exp", "health_exp_oop")
 
-var_EC <- c("ox.E1_Income.support", "ox.E2_Debt.contract.relief", "ox.E3_Fiscal.measures",
-            "ox.E4_International.support", "mkt_close", "mkt_volume")
+var_FIX <- c("pop", "pop_65", "pop_density", "hosp_beds", "pop_death_rate",
+             "gdp", "pop_urban", "surface_area")
 
-var_HS <- c("ox.H4_Emergency.investment.in.healthcare",
-           "ox.H5_Investment.in.vaccines")
+var_EC <- c("E1_Income_support", "E2_Debt_contract_relief", "E3_Fiscal_measures",
+            "E4_International_support")
 
-index <- c("ox.StringencyIndex","ox.LegacyStringencyIndex", "R0mean" ,"stringency_index", "R0")
-#Changes for each day are compared to a baseline value for that day of the week.
-#The baseline is the median value, for the corresponding day of the week, during the 5-
-#week period Jan 3-Feb 6, 2020.
-var_MOB <- c("retail_and_recreation_percent_change_from_baseline", "grocery_and_pharmacy_percent_change_from_baseline",
-             "parks_percent_change_from_baseline", "transit_stations_percent_change_from_baseline",
-             "workplaces_percent_change_from_baseline", "residential_percent_change_from_baseline")
+var_HS <- c("H4_Emergency_investment_in_healthcare", "H5_Investment_in_vaccines")
 
-var_COVID <- c("confirmed", "deaths", "tests", "recovered", "wm.serious.critical", "hosp",
-               "vent", "icu")
+index <- c("StringencyIndex","GovernmentResponseIndex", "EconomicSupportIndex", "R0mean" ,"ContainmentHealthIndex", "R0")
+
+var_COVID <- c("confirmed", "deaths", "tests", "recovered", "hosp","vent", "icu")
 
 save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
 
@@ -38,13 +30,8 @@ save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/
 #1. icu? number of hospitalized patients in icu 
 #2. vent? Number of patients requiring invasive ventilation on date.
 #3. hosp? Number of hospitalized patients on date.
-#4. mkt_close? Stock market price (Close).
-#5. mkt_volume? Stock market volume.
-#6. health_exp? Current health expenditure (% of GDP).
-#7. health_exp_oop? Out-of-pocket expenditure (% of health expenditure).
 #8. M1_Wildcard? Record policy announcements that do not fit anywhere else <- togli
 
-#QUestion:
-#tutte le colonne ripetute .var1?
+
 
 
