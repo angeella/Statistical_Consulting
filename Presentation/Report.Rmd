@@ -15,9 +15,9 @@ output:
 
 ```{r setup, include=FALSE}
 rm(list = ls())
-path <- "~/GitHub/Lockdown_policies_COVID19/" #Insert your path
+path <- "~/GitHub/Statistical_Consulting/" #Insert your path
 knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
-source(paste0(path, "Code/Angela/packages.R"))
+source(paste0(path, "Angela/packages.R"))
 ```
 
 # Explorative Analysis {data-background=covid.jpg data-background-size=cover}

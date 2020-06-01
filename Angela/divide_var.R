@@ -22,7 +22,7 @@ index <- c("StringencyIndex","GovernmentResponseIndex", "EconomicSupportIndex", 
 
 var_COVID <- c("confirmed", "deaths", "tests", "recovered", "hosp","vent", "icu")
 
-save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Angela/Data/var.RData")
+save(var_LD,var_FIX,var_EC, var_HS,index, var_MOB,var_COVID,file = "Presentation/Data/var.RData")
 
 ##Plus obviously country (id) and date
 

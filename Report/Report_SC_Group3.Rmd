@@ -21,11 +21,12 @@ bibliography: references.bib
 
 ```{r setup, include=FALSE}
 rm(list=ls())
-path <- "~/GitHub/Lockdown_policies_COVID19/" #Insert your path
+path <- "~/GitHub/Statistical_Consulting/" #Insert your path
 knitr::opts_chunk$set(echo = TRUE)
-source(paste0(path, "Code/Angela/packages.R"))
+source(paste0(path, "Angela/packages.R"))
 load(paste0(path, "Presentation/Data/out.RData"))
-load("~/GitHub/Lockdown_policies_COVID19/Code/Angela/Data/var.RData")
+load(paste0(path, "Presentation/Data/var.RData"))
+
 ```
 
 # Introduction 
