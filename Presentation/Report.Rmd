@@ -15,14 +15,11 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-<<<<<<< HEAD
 rm(list = ls())
 path <- "~/GitHub/Statistical_Consulting/" #Insert your path
 knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 source(paste0(path, "Angela/packages.R"))
-=======
 knitr::opts_chunk$set(echo = TRUE)
->>>>>>> parent of 082075c... update
 ```
 
 ## Data
