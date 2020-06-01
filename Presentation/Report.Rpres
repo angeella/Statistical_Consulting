@@ -1,0 +1,30 @@
+Measuring the effect of different political actions to contrast the contagion of COVID19
+========================================================
+author: Angela Andreella, Michele Lambardi, Silvia De Nicolo
+date: 
+autosize: true
+
+First Slide
+========================================================
+
+For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+Slide With Code
+========================================================
+
+```{r}
+summary(cars)
+```
+
+Slide With Plot
+========================================================
+
+```{r, echo=FALSE}
+library(plotly)
+a <- ggplot(cars) + geom_point(aes(x = speed, y = dist))
+ggplotly(a)
+```

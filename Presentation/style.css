@@ -1,0 +1,15 @@
+slides > slide.title-slide hgroup h1 {
+  font-weight: bold;
+  font-size: 45pt;
+  color: black;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+slides > slide.slides codefont pre {
+    font-size: 30px;
+    line-height: 15px;
+    font-family: verdana;
+}

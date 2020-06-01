@@ -1,0 +1,382 @@
+---
+title: Measuring the effect of political actions to contrast the contagion of COVID19
+author: "Angela Andreella, Michele Lambardi, Silvia De Nicolo"
+date: "June 3, 2020"
+output:
+  ioslides_presentation:
+    incremental: yes
+    theme: cosmo
+    transition: slower
+    logo: unipd_logo.png
+    widescreen: true
+    smaller: true
+    css: style.css
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+path <- "~/GitHub/Lockdown_policies_COVID19/" #Insert your path
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+source(paste0(path, "Code/Angela/packages.R"))
+```
+
+# Explorative Analysis {data-background=covid.jpg data-background-size=cover}
+
+## Objective {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+Policymakers in different Countries have introduced <span style="color:rgb(17,57,219);">different political action</span> to contrast the COVID19 contagion.
+
+1. What are the different **containment efforts** and is there a **strategies** resemblance across countries?
+
+2. What is the **effect** of these policies on the contagion from a **global perspective**?
+
+3. Has the **same action** lead to different results in the case of different **regions of Italy**?
+
+## Data {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+
+* COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at **Johns Hopkins University** for contagion data,
+
+*  **Oxford** COVID-19 Government Response Tracker (OxCGRT) for policies tracking. 
+
+
+## Containment strategies and resembling patterns {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+*  Dimension Reduction via <span style="color:rgb(17,57,219);">Polychoric PCA</span> for $11$ ordinal variables (from $0$ to $2$ or $0$ to $3$) indicating the stringency level of policies such as
+
+     + **School**, **workplace** and **transport** closing and **event** cancellation;
+  
+     + **Gathering**, **stay-home** and internal/international **movement** restrictions;
+  
+     + **Information**, **Testing** and Contact **Tracing** campaigns. 
+
+
+*  <span style="color:rgb(17,57,219);">Functional Data Co-Clustering</span> of the countries aligned to the first contagion (from the 10th day before contagion).
+
+## Containment strategies {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, echo=FALSE}
+load(paste0(path,"Presentation/Data/cluster20paesi.Rdata"))
+load(paste0(path,"Presentation/Data/SAVEPLOTS.Rdata"))
+```
+
+## Containment strategies {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+**Restriction-based** policies on one hand, **Tracing** and **Testing** policies on the other hand.
+
+```{r, echo=FALSE}
+ggplot(dpca, aes(x=PC, y=Loadings, fill=policies, group=position))+
+ geom_bar(stat="identity", position="dodge")+
+  coord_flip()+scale_fill_manual("", breaks=c(apol, rpol), 
+                                 values=c(gray[1], peach[1], gray[2],                                           peach[2], gray[3:6], peach[3], gray[7:8]))
+```
+ 
+## Resembling patterns {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, echo=FALSE}
+load(paste0(path,"Presentation/Data/Silvia_maps.RData"))
+grid.arrange(na2, europe2,                  
+             arrangeGrob(kor2, sin2, nrow = 2, ncol=1),
+             ncol = 3, nrow=1, widths=c(3,4,2)) 
+```
+
+
+## Resembling patterns {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+```{r, fig.align='center', echo=FALSE}
+ggarrange(restrict, testt, trace, ncol=3, nrow=1, common.legend = TRUE, legend="bottom")
+```
+
+# Worldwide Analysis {data-background=covid.jpg data-background-size=cover}
+
+## Motivation {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
+load(paste0(path, "Presentation/Data/out.RData"))
+a <- ggplot(dat, aes(x = date, y = active/1000, group = Clusters, color = Clusters)) + geom_smooth(method = 'loess',formula = 'y ~ x') + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Cumulated Active per 1000") + xlab("Date") 
+
+ggplotly(a)
+```
+
+
+## Model {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+<center>
+<span style="color:rgb(17,57,219);">GENERALIZED POISSON MIXED MODEL for Overdispersed Count Data</span>
+</div> 
+</center>
+
+**WHY?**
+
+- We analyze the number of **Active person**, i.e., Confirmed - Deaths - Recovered $\rightarrow$ **Count Dependent Variable** (Generalized Poisson Model);
+
+
+- The data are observed for each **country nested within clusters** during $103$ **days** $\rightarrow$ **Mixed Model**.
+
+
+## Which policies acted better? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r,echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
+out0 <- as.data.frame(ggeffect(mod1, terms = "workplace_closingF"))
+out0$Value <- c("No measures", "Recommend closing or work from home", "require closing for some sector" ,"Require closing all-but-essential workplaces")
+out1 <-as.data.frame(ggeffect(mod1, terms = "gatherings_restrictionsF"))
+out1$Value <- c("No measures", "> 1000", "100-1000 people", "10-100 people", "< 10 people")
+out2 <- as.data.frame(ggeffect(mod1, terms = "transport_closingF"))[c(1,3),]
+out2$Value <- c("No measures", "Require closing")
+out3 <- as.data.frame(ggeffect(mod1, terms = "stay_home_restrictionsF"))[c(1,4),]
+out3$Value <- c("No measures", "Minimal exceptions")
+out4 <- as.data.frame(ggeffect(mod1, terms = "testing_policyF"))
+out4$Value <- c("No measures", "Specific criteria", "Symptoms", "Open")
+out5 <- as.data.frame(ggeffect(mod1, terms = "contact_tracingF"))
+out5$Value <- c("No measures", "Limited", "Comprehensive")
+
+OUT <- rbind(out0, out1, out2, out3, out4, out5)
+OUT$Policies <- c(rep("Workplace Closing", nrow(out0)),
+                  rep("No Gathering", nrow(out1)),
+                  rep("No Transport", nrow(out2)),  
+                  rep("Stay Home", nrow(out3)),
+                  rep("Testing", nrow(out4)),
+                  rep("Tracing", nrow(out5)))
+
+colnames(OUT)[1] <- "Strength"
+
+#OUT$cols <- c("slateblue1", "slateblue2", "slateblue3", "slateblue4")
+
+ggplot(OUT, aes(Policies, predicted, fill = Strength)) +
+  geom_bar(stat = "summary", fun = "mean", 
+           position = position_dodge(width = 0.9)) +
+  scale_y_continuous(name = "Predicted counts of Active People after 14 days", limits = c(0, 1700))+ geom_errorbar(stat = "summary", fun.data = "mean_sdl", 
+                fun.args = list(mult = 2),
+                position =  position_dodge(width =1)) +
+  geom_text(aes(label=Value, group = Strength),     hjust = -0.1, size = 3,
+            position = position_dodge(width = 1),
+            inherit.aes = TRUE)  + coord_flip() + scale_fill_viridis(discrete=T) +
+  theme_minimal() + ylab("") 
+```
+
+## Who acted promptly? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
+load(paste0(path, "Presentation/Data/plot_map.RData"))
+grid.arrange(na2, europe2,                 
+             arrangeGrob(kor2, sin2, nrow = 2, ncol=1),
+             ncol = 3, nrow=1, widths=c(3,4,2))    
+```
+
+## Who acted promptly? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
+load(paste0(path, "Presentation/Data/plot_mod.RData"))
+
+subplot(ggplotly(p1, tooltip = c("colour", "y")) %>% layout(showlegend = FALSE, title = ""),
+ ggplotly(p2, tooltip = c("colour", "y"))%>% layout(showlegend = FALSE,title = ""), 
+ggplotly(p3, tooltip = c("colour", "y")) %>% layout(showlegend = FALSE, title = "Stay Home           Testing            Tracing"), shareY = T
+) 
+```
+
+## Take home message {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+
+
+- <span style="color:rgb(17,57,219);">Lockdown policies work!</span> respect to impose no measure;
+
+- Strong Testing and Tracing policies lead to discovering more infected people (luckily!)
+
+
+
+- **Korea and Singapore are the best countries that acted properly**;
+
+- Sweden, Germany, Portugal, and Greece better than the other UE countries;
+
+- The USA, and Canada better than the other UE countries except for Sweden and Germany.
+
+
+# Italy Case {data-background=covid.jpg data-background-size=cover}
+
+## Introduction {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+<div class="blue2">Background</div>
+
+
+* Italian **regions**, ethernal **divide**
+
+* Lockdown almost simultaneous, excepted the **Red Zone**
+
+* First cases in **Lombardia** and **Lazio** hubs
+
+<div class="blue2">Problems</div>
+
+
+* Policies have **no variability** between regions
+
+* **Baseline control**: some regions start from worse situations
+
+* Cannot estimates some effects as for the nations case
+
+* To our defense, integration between databases came lately
+
+* Instrumental variables, more correct but tricky approach
+
+
+## Approach {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+* **Phase "1" versus Phase "0"** comparison
+
+
+* **Auto-regression**: modelling active cases given past numbers
+   * Related but not quite to the R0 index
+   
+* **Random effects** for region and date, standard panel approach
+
+
+* Assuming policies effects seen **~14 days later**
+
+
+* Controlling for **testing** frequency
+
+```{r, warning=FALSE, echo = FALSE, include = FALSE}
+load(paste0(path, "Presentation/Data/finaleregioni.RData"))
+load(paste0(path, "Presentation/Data/maps.RData"))
+map <- map %>% filter(country=="Italy")
+
+npaz <- 30
+
+dat <- dat %>%
+   mutate(
+      monthspoint=14/30*log(npaz/active)/log(ratepoint),
+      monthslower=14/30*log(npaz/active)/log(ratelower),
+      monthsupper=14/30*log(npaz/active)/log(rateupper)
+   )
+
+last <- dat %>%
+   filter(date==max(date)) %>%
+   left_join(map, by="region") %>%
+   st_as_sf()
+```
+
+## Speed of contagion {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, warning=FALSE, echo = FALSE}
+last %>%
+   arrange(ratepoint) %>%
+   mutate(region=factor(region, levels=region)) %>%
+   ggplot(aes(x=ratepoint, y=region)) +
+   geom_point(aes(x=ratepoint)) +
+   geom_errorbar(aes(xmin=ratelower, xmax=rateupper, group=region)) +
+   geom_text(aes(x=ratelower, label=paste(region, " ")), hjust="right") +
+   theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill="white"),
+        panel.grid.major.x = element_line(color="grey"),
+        panel.grid.minor.x = element_line(color="lightgrey"),
+        # panel.grid.major.y = element_line(color="grey"),
+        legend.position = "none") +
+   xlab("active cases in two weeks, expected") +
+   scale_x_continuous(limits = c(0,1), labels = function(x) paste0(ifelse(x<1,"","+"), (x-1)*100, "%")) # Multiply by 100 
+```
+
+## ETV, Estimated Time to Victory {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, warning=FALSE, echo = FALSE}
+last %>%
+   arrange(monthspoint) %>%
+   mutate(region=factor(region, levels=region)) %>%
+   ggplot(aes(x=monthspoint, y=region)) +
+   geom_point(aes(x=monthspoint)) +
+   geom_errorbar(aes(xmin=monthslower, xmax=monthsupper, group=region)) +
+   geom_text(aes(x=monthsupper, label=paste(" ", region)), hjust="left") +
+   theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill="white"),
+        panel.grid.major.x = element_line(color="grey"),
+        panel.grid.minor.x = element_line(color="lightgrey"),
+        # panel.grid.major.y = element_line(color="grey"),
+        legend.position = "none") +
+   xlab(paste0("months to ", npaz, "-or-less active cases, expected, approximate")) +
+   xlim(0, 24)
+```
+
+## Joint view {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, warning=FALSE, echo = FALSE}
+npaz <- 30
+last %>%
+   ggplot(aes(x=ratepoint, y=monthspoint)) +
+   geom_point() +
+   geom_errorbar(aes(ymin=monthslower, ymax=monthsupper, group=region)) +
+   # geom_errorbar(aes(xmin=ratelower, xmax=rateupper, group=region)) +
+   # geom_text(aes(x=monthsupper, label=paste(" ", region)), hjust="left") +
+   theme(
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill="white"),
+        panel.grid.major.x = element_line(color="grey"),
+        panel.grid.minor.x = element_line(color="lightgrey"),
+        panel.grid.major.y = element_line(color="grey"),
+        panel.grid.minor.y = element_line(color="lightgrey"),
+        # panel.grid.major.y = element_line(color="grey"),
+        legend.position = "none") +
+   xlab(paste0("expected cases in two weeks")) +
+   ylab(paste0("months to ", npaz, "-or-less active cases")) +
+   ylim(0, 20) +
+   scale_x_continuous(limits = c(0.25,1), labels = function(x) paste0(ifelse(x<1,"","+"), (x-1)*100, "%")) +
+   geom_text(aes(label=ifelse(ratepoint<0.7,"",paste0("  ", region))), hjust="left")
+   #+
+   # xlim(0, 24)
+```
+
+## A map of criticality {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, warning=FALSE, echo = FALSE}
+# $ geometry           :sfc_MULTIPOLYGON of length 51; first list element: List of 1
+#   ..$ :List of 1
+#   .. ..$ : num [1:245, 1:2] -1111066 -1110710 -1096162 -1095175 -1012095 ...
+#   ..- attr(*, "class")= chr  "XY" "MULTIPOLYGON" "sfg"
+#  - attr(*, "sf_column")= chr "geometry"
+#  - attr(*, "relation_to_geometry")= Factor w/ 3 levels "field","lattice",..: NA NA NA NA NA NA NA NA NA NA ...
+#   ..- attr(*, "names")= chr  "geo_id" "fips_state" "name" "lsad" ...
+ggplotly(
+   last %>%
+      mutate(value=(ratepoint-1)*100) %>%
+      as_Spatial() %>%
+      st_as_sf() %>%
+      ggplot() +
+      geom_sf(aes(fill=value), color="black", lwd=0.5) +
+      scale_fill_gradientn(colors = c("white", "darkblue"), labels = function(x) paste0(ifelse(x<0,"","+"), x, "%")) +
+      theme(axis.text.x = element_blank(),
+            # axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.ticks = element_blank(),
+           rect = element_blank(),
+           legend.position = "none") +
+      # geom_sf_text(aes(label=ifelse(region=="Basilicata", "?", "")), color="white") +
+      xlab(paste0("active cases expected in two weeks"))
+)
+```
+
+## Anything weird? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}
+
+```{r, warning=FALSE, echo = FALSE}
+cutpoint <- "2020-03-22"
+ggplotly(
+   dat %>%
+      mutate(value=100*(ratepoint-1)) %>%
+      filter(date >= cutpoint) %>%
+      ggplot(aes(x=date, y=value, color=region)) +
+      geom_line() +
+      theme(legend.position = "none") +
+      scale_x_date(date_labels = "%b %d") +
+      scale_y_continuous(limits = c(-100,100*max(-1+dat$ratepoint[dat$date >= cutpoint])), labels = function(x) paste0(ifelse(x<0,"","+"), x, "%")) +
+      xlab("") +
+      ylab("active cases in two weeks, expected")
+   )
+   #+
+   #  +
+   # geom_sf_text(aes(label=ifelse(region=="Basilicata", "?", ""))) +
+   # xlab(paste0("active cases expected in two weeks"))
+```
+
+# Conclusions {data-background=covid.jpg data-background-size=cover}
