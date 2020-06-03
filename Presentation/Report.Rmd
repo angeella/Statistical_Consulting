@@ -107,10 +107,18 @@ ggplotly(a)
 
 **WHY?**
 
-- We analyze the number of **Active person**, i.e., Confirmed - Deaths - Recovered, $14$ days after lockdown policies application$\rightarrow$ **Count Dependent Variable** (Generalized Poisson Model);
+- We analyze the number of **Active person**, i.e., Confirmed - Deaths - Recovered $\rightarrow$ **Count Dependent Variable** (Generalized Poisson Model);
 
 
-- The data are observed for each **country nested within clusters** during $131$ **days** $\rightarrow$ **Mixed Model**.
+- The data are observed for each **country nested within clusters** during $103$ **days** $\rightarrow$ **Mixed Model**.
+
+
+- **Confounders** from the World Bank Open Data and Oxford Data:
+  - **FIXED**: 
+    - Population density;
+  - **LONGITUDINAL**: 
+    - Economic: Income Support and Debt/contract relief for households;
+    - Health: Emergency Investment in healthcare and Investment in vaccines.
 
 
 ## Which policies acted better? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}

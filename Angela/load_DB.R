@@ -15,11 +15,11 @@ load("~/GitHub/Lockdown_policies_COVID19/Code/Angela/Data/db.RData")
 #Define Clusters 
 Cl1 <- c("KOR", "SGP")
 Cl2 <- c("DEU", "SWE")
-Cl3 <- c("CAN", "GRC", "PRT")
+Cl3 <- c("CAN", "GRC", "PRT", "USA")
 Cl4 <- c("ESP", "GBR", "IRL", "ITA", "NLD")
 Cl5 <- c("AUT", "BEL", "CHE", "DNK", "FIN", "FRA", "NOR")
-Cl6 <- c("USA")
-states_to_sel <- c(Cl1,Cl2,Cl3,Cl4,Cl5,Cl6)
+
+states_to_sel <- c(Cl1,Cl2,Cl3,Cl4,Cl5)
 
 ############################Some preprocessing steps ############################
 #Filter data
@@ -29,9 +29,8 @@ dat <- dat %>% filter(id %in% states_to_sel)
 dat$Clusters <- ifelse(dat$id %in% Cl1, "Cl1", 
                         ifelse(dat$id %in% Cl2, "Cl2", 
                                ifelse(dat$id %in% Cl3, "Cl3", 
-                                      ifelse(dat$id %in% Cl4, "Cl4", 
-                                             ifelse(dat$id %in% Cl5, "Cl5",     
-                                             "Cl6")))))
+                                      ifelse(dat$id %in% Cl4, "Cl4",     
+                                             "Cl5"))))
 dat$Clusters <- factor(dat$Clusters)
 
 #Aligned data by first confirmed case
@@ -164,7 +163,8 @@ f <- as.formula(paste("active_lag", "~",
                       "+", paste(c(var_HS[1]), collapse=" + "),
                       "+", paste(c(var_LD[c(2,4:6,8:9)]),collapse=" + "),
                       "+ Clusters + (0 + pca_LD|id) + (1|date2)"))
-mod1 <- glmmTMB(f, dat, family="nbinom2", offset = log(active + 1))
+
+mod1 <- glmmTMB(f, dat, family="nbinom2", offset = log(pop + 1))
 
 comp_cluster <- glht_glmmTMB(mod1, linfct = mcp(Clusters = "Tukey"))
 
