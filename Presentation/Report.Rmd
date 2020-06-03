@@ -92,7 +92,7 @@ ggarrange(restrict, testt, trace, ncol=3, nrow=1, common.legend = TRUE, legend="
 
 ```{r, echo=FALSE, warning = FALSE, comment = FALSE, silent = T}
 load(paste0(path, "Presentation/Data/out.RData"))
-a <- ggplot(dat, aes(x = date, y = active/1000, group = Clusters, color = Clusters)) + geom_smooth(method = 'loess',formula = 'y ~ x') + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Cumulated Active per 1000") + xlab("Date") 
+a <- ggplot(dat, aes(x = date, y = active_count/pop, group = Clusters, color = Clusters)) + geom_smooth(method = 'loess',formula = 'y ~ x') + scale_x_date(date_labels = "%b %d") + theme_classic() + ylab("Active/population size") + xlab("Date") 
 
 ggplotly(a)
 ```
@@ -107,10 +107,10 @@ ggplotly(a)
 
 **WHY?**
 
-- We analyze the number of **Active person**, i.e., Confirmed - Deaths - Recovered $\rightarrow$ **Count Dependent Variable** (Generalized Poisson Model);
+- We analyze the number of **Active person**, i.e., Confirmed - Deaths - Recovered, $14$ days after lockdown policies application$\rightarrow$ **Count Dependent Variable** (Generalized Poisson Model);
 
 
-- The data are observed for each **country nested within clusters** during $103$ **days** $\rightarrow$ **Mixed Model**.
+- The data are observed for each **country nested within clusters** during $131$ **days** $\rightarrow$ **Mixed Model**.
 
 
 ## Which policies acted better? {data-background=back.jpg data-background-size=cover .flexbox .vcenter}

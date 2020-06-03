@@ -7,18 +7,19 @@ source(paste0(path,"Angela/packages.R"))
 source(paste0(path, "Angela/compute_R0_ML.R"))
 source(paste0(path,"Angela/utils.R"))
 #load variables names
-load(paste0(path,"Angela/Data/var.RData"))
+load("~/GitHub/Lockdown_policies_COVID19/Code/Angela/Data/var.RData")
 
 #load data
-load(paste0(path,"Angela/Data/db.RData"))
+load("~/GitHub/Lockdown_policies_COVID19/Code/Angela/Data/db.RData")
 
 #Define Clusters 
 Cl1 <- c("KOR", "SGP")
 Cl2 <- c("DEU", "SWE")
-Cl3 <- c("CAN", "GRC", "PRT","USA")
+Cl3 <- c("CAN", "GRC", "PRT")
 Cl4 <- c("ESP", "GBR", "IRL", "ITA", "NLD")
 Cl5 <- c("AUT", "BEL", "CHE", "DNK", "FIN", "FRA", "NOR")
-states_to_sel <- c(Cl1,Cl2,Cl3,Cl4,Cl5)
+Cl6 <- c("USA")
+states_to_sel <- c(Cl1,Cl2,Cl3,Cl4,Cl5,Cl6)
 
 ############################Some preprocessing steps ############################
 #Filter data
@@ -29,7 +30,8 @@ dat$Clusters <- ifelse(dat$id %in% Cl1, "Cl1",
                         ifelse(dat$id %in% Cl2, "Cl2", 
                                ifelse(dat$id %in% Cl3, "Cl3", 
                                       ifelse(dat$id %in% Cl4, "Cl4", 
-                                             "Cl5"))))
+                                             ifelse(dat$id %in% Cl5, "Cl5",     
+                                             "Cl6")))))
 dat$Clusters <- factor(dat$Clusters)
 
 #Aligned data by first confirmed case
@@ -168,12 +170,7 @@ comp_cluster <- glht_glmmTMB(mod1, linfct = mcp(Clusters = "Tukey"))
 
 comp_work <- glht_glmmTMB(mod1, linfct = mcp(workplace_closingF = "Tukey"))
 
-<<<<<<< HEAD
 save(list = ls(all.names = TRUE), file = paste0(path,"Angela/out.RData"))
 
-
-
-
-=======
 save(list = ls(all.names = TRUE), file = "out.RData")
->>>>>>> parent of 082075c... update
+
