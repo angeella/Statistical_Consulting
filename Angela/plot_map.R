@@ -20,10 +20,18 @@ clust$id[20] <- "USA"
 clust$id[10] <- "UK"
 pr<-ggeffect(mod1, "Clusters")
 
-clust$predicted <- ifelse(clust$cluster == "1", pr$predicted[1],
-                          ifelse(clust$cluster == "2", pr$predicted[2],
-                                 ifelse(clust$cluster == "3", pr$predicted[3],
-                                        ifelse(clust$cluster == "4", pr$predicted[4], pr$predicted[5]))))
+clust$predicted <- ifelse(clust$cluster == "1", pr$predicted[1]/pr$predicted[4],
+                          ifelse(clust$cluster == "2", pr$predicted[2]/pr$predicted[4],
+                                 ifelse(clust$cluster == "3", pr$predicted[3]/pr$predicted[4],
+                                        ifelse(clust$cluster == "4", pr$predicted[4]/pr$predicted[4], pr$predicted[5]/pr$predicted[4]))))
+
+#rmod <- ranef(mod1)$cond$id
+#rmod$id <- rownames(rmod)
+
+#dat1 <- full_join(clust, rmod, by= "id")
+
+#clust$predicted_ranef <- dat1$predicted * exp(dat1$pca_LD)
+
 clust$predicted <- round(clust$predicted,2)
 clust$predicted <- as.factor(clust$predicted)
 world <- map_data("world")
